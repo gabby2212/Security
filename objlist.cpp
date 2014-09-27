@@ -22,6 +22,8 @@ int main(int argc, char *argv[]){
 	string username;
 	string objname;
 	struct sigaction sigIntHandler;
+	bool meta = false;
+	bool uname = false;
 
    	sigIntHandler.sa_handler = sig_hadle;
    	sigemptyset(&sigIntHandler.sa_mask);
@@ -29,20 +31,24 @@ int main(int argc, char *argv[]){
 
    	sigaction(SIGINT, &sigIntHandler, NULL);
 
-	opt = getopt(argc, argv, "u:");
-	if(opt != 'u' || argc != 4)
-		printError("Usage objput -u username objname");
-	username = optarg;
-	objname = argv[3];
+	while((opt = getopt(argc, argv, "lu:")) != -1){
+		switch(opt){
+			case 'u':
+				uname = true;
+				username = optarg;
+				break;
+			case 'l':
+				meta = true;
+				break;
+		}
+	}
+	if(!uname || (!meta && argc != 3) || (meta && argc != 4))
+		printError("Usage objlist -u username objname");
 	setUp();
 
 	if(!userExists(username))
 		printError("Invalid user");
 	User currentUser = users.find(username)->second;
-	if(currentUser.hasFile(objname))
-		cerr << "Object already exists, overwritting" << endl;
-	if(objname.length() > FILENAME_MAX)
-		printError("Object name too long");
-	writeFile(objname, username);
+	printFiles(username, meta);
 
 }

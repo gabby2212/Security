@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
 
 	opt = getopt(argc, argv, "u:");
 	if(opt != 'u' || argc != 4)
-		printError("Usage objput -u username objname");
+		printError("Usage objget -u username objname");
 	username = optarg;
 	objname = argv[3];
 	setUp();
@@ -39,10 +39,8 @@ int main(int argc, char *argv[]){
 	if(!userExists(username))
 		printError("Invalid user");
 	User currentUser = users.find(username)->second;
-	if(currentUser.hasFile(objname))
-		cerr << "Object already exists, overwritting" << endl;
 	if(objname.length() > FILENAME_MAX)
 		printError("Object name too long");
-	writeFile(objname, username);
+	readFile(objname, username);
 
 }

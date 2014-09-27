@@ -47,4 +47,8 @@ public:
 	  }
 	  return false;
 	}
+
+	void addFile(string filename){
+		files.push_back(filename);
+	}
 };
