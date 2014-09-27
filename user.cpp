@@ -1,54 +1,37 @@
+using namespace std;
+#include <list>
 class User{
-private:
-	string username;
-	vector<string> files;
-	vector<string> groups;
-	int numGroups;
 public:
+	string username;
+	list<string> files;
+	list<string> groups;
 	User(){
 	}
-	User(string uname, vector<string> g, int nGroups){
-		groups = g;
-		numGroups = numGroups;
+	User(string uname){
 		username = uname;
 	}
 	~User(){
 		groups.clear();
+		files.clear();
 	}
 
 	User (const User &u){
-		groups =u.getGroups();
-		numGroups = u.getNumGroups();
-		username = u.getUname();
+		groups =u.groups;
+		username = u.username;
+		files = u.files;
 	}
 	User& operator= (const User &u){
-		groups = u.getGroups();
-		numGroups = u.getNumGroups();
-		username = u.getUname();
+		groups =u.groups;
+		username = u.username;
+		files = u.files;
 		return *this;
 	}
 
-	string getUname() const{
-		return username;
-	}
-
-	vector<string> getGroups() const{
-		return groups;
-	}
-
-	int getNumGroups() const{
-		return numGroups;
-	}
-
 	bool hasFile(string filename){
-	  for (vector<string>::iterator it = files.begin() ; it != files.end(); ++it){
+	  for (list<string>::iterator it = files.begin() ; it != files.end(); ++it){
 	  	if(filename.compare(*it) == 0)
 	  		return true;
 	  }
 	  return false;
-	}
-
-	void addFile(string filename){
-		files.push_back(filename);
 	}
 };

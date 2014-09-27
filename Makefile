@@ -1,4 +1,4 @@
-all: objput objget objlist
+all: objput objget objlist objsetacl
 
 objput:
 	g++ -o objput objput.cpp
@@ -9,5 +9,8 @@ objget:
 objlist:
 	g++ -o objlist objlist.cpp
 
+objsetacl:
+	g++ -o objsetacl objsetacl.cpp
+
 clean:
-	rm -f *.o objput objget objlist
+	rm -f *.o objput objget objlist objsetacl

@@ -9,13 +9,7 @@ using namespace std;
 #include <map>
 #include <signal.h>
 
-#define BUFFER_SIZE 256
-
-void sig_hadle(int s){
-	fileList.close();
-	newFile.close();
-	exit(0);
-}
+extern map<string, User>  users;
 
 int main(int argc, char *argv[]){
 	int opt;
@@ -25,13 +19,15 @@ int main(int argc, char *argv[]){
 	bool meta = false;
 	bool uname = false;
 
+   	//Start signal handling to capture crtl+C and ctrl+D
    	sigIntHandler.sa_handler = sig_hadle;
    	sigemptyset(&sigIntHandler.sa_mask);
    	sigIntHandler.sa_flags = 0;
-
    	sigaction(SIGINT, &sigIntHandler, NULL);
+   	sigaction(SIGTERM, &sigIntHandler, NULL);
 
-	while((opt = getopt(argc, argv, "lu:")) != -1){
+   	//Check for valid input params
+	while((opt = getopt(argc, argv, "lu:")) != ERROR){
 		switch(opt){
 			case 'u':
 				uname = true;
@@ -43,12 +39,14 @@ int main(int argc, char *argv[]){
 		}
 	}
 	if(!uname || (!meta && argc != 3) || (meta && argc != 4))
-		printError("Usage objlist -u username objname");
+		printError("Usage objlist -u username (-l)");
+	validNameString(username);
+
+	//Set up file system
 	setUp();
 
 	if(!userExists(username))
 		printError("Invalid user");
-	User currentUser = users.find(username)->second;
 	printFiles(username, meta);
 
 }
