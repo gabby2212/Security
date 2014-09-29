@@ -17,9 +17,11 @@ int main(int argc, char *argv[]){
 	string username;
 	string objname;
 	string groupname;
+	string access;
 	string userfile;
-	bool uname;
-	bool gname;
+	bool uname = false;
+	bool gname = false;
+	bool ac = false;
 	struct sigaction sigIntHandler;
 
 	//Start signal handling to capture crtl+C and ctrl+D
@@ -29,7 +31,7 @@ int main(int argc, char *argv[]){
    	sigaction(SIGINT, &sigIntHandler, NULL);
    	sigaction(SIGTERM, &sigIntHandler, NULL);
    	//Check for valid input params
-	while((opt = getopt(argc, argv, "g:u:")) != ERROR){
+	while((opt = getopt(argc, argv, "g:u:a:")) != ERROR){
 		switch(opt){
 			case 'u':
 				uname = true;
@@ -39,14 +41,20 @@ int main(int argc, char *argv[]){
 				gname = true;
 				groupname = optarg;
 				break;
+			case 'a':
+				ac = true;
+				access = optarg;
+				break;
 		}
 	}
-	objname = argv[5];
+	if(argc != 9 || !uname || !gname)
+		printError("Usage objtestacl -u username -g groupname -a acess objname (userfile)");
+
+	objname = argv[7];
 	validNameString(username);
 	validNameString(groupname);
-	if(argc != 7 || !uname || !gname)
-		printError("Usage objsetacl -u username -g groupname objname (userfile)");
-	userfile = argv[6];
+	validPermissions(access);
+	userfile = argv[8];
 
 	//Validate object
 	if(objname.find("+") == string::npos){
@@ -60,7 +68,7 @@ int main(int argc, char *argv[]){
 		validNameString(targetObject);
 		objname = targetUser + "." + targetObject;
 	}
-
+	
 	//Set up file system
 	setUp(userfile);
 	initACL();
@@ -69,10 +77,13 @@ int main(int argc, char *argv[]){
 		printError("Invalid user");
 	if(!groupExists(groupname))
 		printError("Invalid group");
+	if(access.length() != 1)
+		printError("Please check one acess at a time");
 	User currentUser = users.find(username)->second;
-	if(testACL(username, groupname, objname, "p"))
-		writeACL(objname);
+
+	if(testACL(username, groupname, objname, access))
+		cout << "allowed" << endl;
 	else
-		printError("Permission Denied");writeACL(objname);
+		cout << "denied" << endl;
 	return 0;
 }

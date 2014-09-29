@@ -14,7 +14,11 @@ extern map<string, User>  users;
 int main(int argc, char *argv[]){
 	int opt;
 	string username;
+	string groupname;
 	string objname;
+	string userfile;
+	bool uname = false;
+	bool gname = false;
 	struct sigaction sigIntHandler;
 
 	//Start signal handling to capture crtl+C and ctrl+D
@@ -25,19 +29,37 @@ int main(int argc, char *argv[]){
    	sigaction(SIGTERM, &sigIntHandler, NULL);
 
    	//Check for valid input params
-	opt = getopt(argc, argv, "u:");
-	if(opt != 'u' || argc != 4)
-		printError("Usage objget -u username objname");
-	username = optarg;
-	objname = argv[3];
-	validNameString(objname);
+	//Check for valid input params
+	while((opt = getopt(argc, argv, "g:u:")) != ERROR){
+		switch(opt){
+			case 'u':
+				uname = true;
+				username = optarg;
+				break;
+			case 'g':
+				gname = true;
+				groupname = optarg;
+				break;
+		}
+	}
+	objname = argv[5];
 	validNameString(username);
-	
+	validNameString(groupname);	
+	if(!uname || !gname || argc != 7)
+		printError("Usage objget -u username -g groupname objname (usefile)");
+	validNameString(objname);
+	string aclObjname = username + "." + objname;
+	userfile = argv[6];
+
 	//Set up file system
-	setUp();
+	setUp(userfile);
+	initACL();
 
 	if(!userExists(username))
 		printError("Invalid user");
-	readFile(objname, username);
-
+	if(testACL(username, groupname, aclObjname, "r"))
+		readFile(objname, username);
+	else
+		printError("Permission denied");
+	return 0;
 }
