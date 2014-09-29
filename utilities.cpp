@@ -14,17 +14,16 @@ using namespace std;
 #include <algorithm>
 
 #define MAX_USERNAME_SIZE 25
-#define VALID_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_"
+#define VALID_CHARS "*abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_"
 #define ERROR -1
 
 static map<string, User>  users;
 static list<string> groups;
 static int numUsers;
-ofstream fileList;
+
 ofstream newFile;
 
-void sig_hadle(int s){
-	fileList.close();
+void sig_handle(int s){
 	newFile.close();
 	exit(0);
 }
@@ -50,7 +49,7 @@ bool userExists(string uname){
 bool groupExists(string gname){
 	list<string>:: iterator findGrp;
 	findGrp = find(groups.begin(), groups.end(), gname.c_str()); 	
-	if(findGrp == groups.end())
+	if(findGrp == groups.end() && gname.compare("*") != 0)
 		return false;
 	return true;
 }
@@ -105,44 +104,6 @@ void setUp(){
 	}
 	else
 		printError("Couldn't open userfile");
-	
-	//Add files to users	
-	ifstream fileList("fileList");
-	if(fileList.is_open())
-	{
-		while(getline(fileList, line)){
-			string uname;
-			//Separate lines by spaces
-			istringstream buf(line);
-		    istream_iterator<string> beg(buf), end;
-		    vector<string> tokens(beg, end);
-		    vector<string>::const_iterator i;
-
-		    i = tokens.begin();
-	        uname = (*i);
-	              
-	        //Validate username
-	        validNameString(uname);
-			if(users.find(uname) == users.end())
-				printError("User doesn't exit fileList might be corrupted");
-   	        User *currentUser = &(users.find(uname)->second);
-
-		    //Validate and add file
-		    ++i;
-		    if(i == tokens.end())
-	    		printError("FileList might be corrupted");
-	    	tok = (*i);   	
-			validNameString(tok);
-    		currentUser->files.push_back(tok);
-		}
-		fileList.close();
-	}
-	else{
-		//File system is empty create fileList
-		ofstream fileList;
-		fileList.open("fileList");
-		fileList.close();
-	}
 }
 
 long fileSize(string username, string filename){
@@ -169,13 +130,13 @@ void writeFile(string filename, string uname){
 
 	//Check if user has file, if not add to fileList
 	User currentUser = users.find(uname)->second;
-	if(!currentUser.hasFile(filename)){
-		ofstream fileList("fileList", ios::app);
-		if(fileList.is_open())
-			fileList << fileEntry << endl;
-		else
-			printError("Couldn't open fileList");
-	}
+	// if(!currentUser.hasFile(filename)){
+	// 	ofstream fileList("fileList", ios::app);
+	// 	if(fileList.is_open())
+	// 		fileList << fileEntry << endl;
+	// 	else
+	// 		printError("Couldn't open fileList");
+	// }
 
 	//Write to file
 	ofstream newFile(fname.c_str());
@@ -211,7 +172,7 @@ void readFile(string filename, string uname){
 void printFiles(string uname, bool meta){
 	string line;
 	User currentUser = users.find(uname)->second;
-	list<string> currentFiles = currentUser.files;
+	list<string> currentFiles;
 	for (list<string>::iterator it = currentFiles.begin() ; it != currentFiles.end(); ++it){
 	  	if(!meta)
 	        cout << *it << endl;

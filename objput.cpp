@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
 	struct sigaction sigIntHandler;
 
 	//Start signal handling to capture crtl+C and ctrl+D
-   	sigIntHandler.sa_handler = sig_hadle;
+   	sigIntHandler.sa_handler = sig_handle;
    	sigemptyset(&sigIntHandler.sa_mask);
    	sigIntHandler.sa_flags = 0;
    	sigaction(SIGINT, &sigIntHandler, NULL);
@@ -39,8 +39,8 @@ int main(int argc, char *argv[]){
 	if(!userExists(username))
 		printError("Invalid user");
 	User currentUser = users.find(username)->second;
-	if(currentUser.hasFile(objname))
-		cerr << "Object already exists, overwritting" << endl;
+	// if(currentUser.hasFile(objname))
+	// 	cerr << "Object already exists, overwritting" << endl;
 	writeFile(objname, username);
 
 }
