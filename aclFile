@@ -1,0 +1,4 @@
+u1.test.txt:
+user u1 rwxpv
+group * rwxpv
+

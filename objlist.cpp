@@ -15,6 +15,7 @@ int main(int argc, char *argv[]){
 	int opt;
 	string username;
 	string objname;
+	string userfile;
 	struct sigaction sigIntHandler;
 	bool meta = false;
 	bool uname = false;
@@ -38,15 +39,18 @@ int main(int argc, char *argv[]){
 				break;
 		}
 	}
-	if(!uname || (!meta && argc != 3) || (meta && argc != 4))
-		printError("Usage objlist -u username (-l)");
+	if(!uname || (!meta && argc != 4) || (meta && argc != 5))
+		printError("Usage objlist -u username (-l) (userfile)");
 	validNameString(username);
-
+	if(!meta)
+		userfile = argv[3];
+	else
+		userfile = argv[4];
 	//Set up file system
-	setUp();
+	setUp(userfile);
 
 	if(!userExists(username))
 		printError("Invalid user");
 	printFiles(username, meta);
-
+	return 0;
 }

@@ -5,7 +5,6 @@ using namespace std;
 #include <ctype.h>
 #include <getopt.h>
 #include "utilities.cpp"
-#include "aclUtils.cpp"
 #include <map>
 #include <signal.h>
 
@@ -18,6 +17,7 @@ int main(int argc, char *argv[]){
 	string username;
 	string objname;
 	string groupname;
+	string userfile;
 	bool uname;
 	bool gname;
 	struct sigaction sigIntHandler;
@@ -44,8 +44,9 @@ int main(int argc, char *argv[]){
 	objname = argv[5];
 	validNameString(username);
 	validNameString(groupname);
-	if(argc != 6 || !uname || !gname)
-		printError("Usage objgetacl -u username -g groupname objname");
+	if(argc != 7 || !uname || !gname)
+		printError("Usage objgetacl -u username -g groupname objname (userfile)");
+	userfile = argv[6];
 
 	//Validate object
 	if(objname.find("+") == string::npos){
@@ -62,7 +63,7 @@ int main(int argc, char *argv[]){
 
 
 	//Set up file system
-	setUp();
+	setUp(userfile);
 	initACL();
 
 	if(!userExists(username))
@@ -75,5 +76,6 @@ int main(int argc, char *argv[]){
 		getACL(objname);
 	else
 		printError("Permission Denied");
+	return 0;
 
 }
