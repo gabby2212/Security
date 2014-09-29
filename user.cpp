@@ -4,6 +4,7 @@ class User{
 public:
 	string username;
 	list<string> groups;
+	list<string> files;
 	User(){
 	}
 	User(string uname){
@@ -21,5 +22,17 @@ public:
 		groups =u.groups;
 		username = u.username;
 		return *this;
+	}
+
+	bool hasFile(string filename){
+	  for (list<string>::iterator it = files.begin() ; it != files.end(); ++it){
+	  	if(filename.compare(*it) == 0)
+	  		return true;
+	  }
+	  return false;
+	}
+
+	void addFile(string filename){
+		files.push_back(filename);
 	}
 };

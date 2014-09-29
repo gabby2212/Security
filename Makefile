@@ -1,6 +1,6 @@
 FLAGS = -std=c++11
 
-all: objput objget objlist objsetacl objgetacl
+all: objput objget objlist objsetacl objgetacl objtestacl
 
 objput:
 	g++ -o objput objput.cpp
@@ -17,5 +17,8 @@ objsetacl:
 objgetacl:
 	g++ -o objgetacl objgetacl.cpp $(FLAGS)
 
+objtestacl:
+	g++ -o objtestacl objtestacl.cpp $(FLAGS)
+
 clean:
-	rm -f *.o objput objget objlist objsetacl objgetacl
+	rm -f *.o objput objget objlist objsetacl objgetacl objtestacl

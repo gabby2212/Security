@@ -29,7 +29,6 @@ void printACL(){
 	map<string, ACLEntry> aclss = currentACL.ace;
 	for (map<string, ACLEntry>::iterator it = aclss.begin(); it != aclss.end(); it++){
     	ACLEntry thisyeah = it->second;
-    	cout << thisyeah.objname << endl;
 		for (map<string,string>::iterator it2=thisyeah.userPermissions.begin(); it2!=thisyeah.userPermissions.end(); ++it2)
     		cout << it2->first << " => " << it2->second << '\n';
 		for (map<string,string>::iterator it3=thisyeah.groupPermissions.begin(); it3!=thisyeah.groupPermissions.end(); ++it3)
@@ -38,6 +37,8 @@ void printACL(){
 }
 
 void getACL(string objname){
+	if(currentACL.ace.find(objname) == currentACL.ace.end())
+		printError("Invalid object");
 	ACLEntry a = currentACL.ace.find(objname)->second;
 	for (map<string,string>::iterator it = a.userPermissions.begin(); it != a.userPermissions.end(); ++it)
     	cout << it->second << " " << it->first << endl;
@@ -46,10 +47,27 @@ void getACL(string objname){
 
 }
 
+bool testACL(string uname, string gname, string objname, string access){
+	if(currentACL.ace.find(objname) == currentACL.ace.end())
+		printError("Invalid object");
+	ACLEntry a = currentACL.ace.find(objname)->second;
+	if(a.userPermissions.find(uname) != a.userPermissions.end()){
+		string userperm = a.userPermissions.find(uname)->second;
+		if(userperm.find(access) != string::npos)
+			return true;
+	}
+	else if(a.groupPermissions.find(gname) != a.groupPermissions.end()){
+		string gperm = a.groupPermissions.find(gname)->second;
+		if(gperm.find(access) != string::npos)
+			return true;
+	}
+	return false;
+	
+}
+
 void writeACL(string oname){
 	string line;
 	string token;
-	
 	map<string, ACLEntry>::iterator aces = currentACL.ace.find(oname);
 	if(aces == currentACL.ace.end())
 		printError("Invalid object");
@@ -98,6 +116,9 @@ void validPermissions(string permissions){
 
 void initACL(){
 	string line;
+	string token;
+	string user;
+
 	ifstream aclFile("aclFile");
 	if(aclFile.is_open())
 	{
@@ -106,9 +127,20 @@ void initACL(){
 			string objname;
 			if(ch != ':')
 				printError("Couldn't create acl, aclFile might be corrupted");
-			objname = line.substr(0, line.size()-1);
+			istringstream iss(line);
+			std::getline(iss, token, '.');
+			if(token.empty())
+				printError("Usage user.group permissions");
+			user = token;
+			if(!userExists(user))
+				printError("aclFile might be corrupted");
+			User u = users.find(user)->second;
+			getline(iss, token);
+			objname = token.substr(0, token.size()-1);
 			validNameString(objname);
-			ACLEntry *acle = new ACLEntry(objname);
+			u.addFile(objname);
+
+			ACLEntry *acle = new ACLEntry(user + "." +objname);
 			while(getline(aclFile, line) && !line.empty()){
 				string pType;
 				//Separate lines by spaces
@@ -136,7 +168,7 @@ void initACL(){
 			    else
 			    	printError("No permissions for a file, aclFile might be corrupted");
 			}
-			currentACL.ace[objname] = *acle;
+			currentACL.ace[user + "." +objname] = *acle;
 		}
 		aclFile.close();
 	}
@@ -145,5 +177,5 @@ void initACL(){
 		ofstream aclFile;
 		aclFile.open("aclFile");
 		aclFile.close();
-	}	
+	}
 }

@@ -44,9 +44,21 @@ int main(int argc, char *argv[]){
 	objname = argv[5];
 	validNameString(username);
 	validNameString(groupname);
-	validNameString(objname);
 	if(argc != 6 || !uname || !gname)
 		printError("Usage objsetacl -u username -g groupname objname");
+
+	//Validate object
+	if(objname.find("+") == string::npos){
+		validNameString(objname);
+		objname = username + "." + objname;
+	}
+	else{
+		string targetUser = objname.substr(0, objname.find("+"));
+		string targetObject = objname.substr(objname.find("+") + 1, objname.length());
+		validNameString(targetUser);
+		validNameString(targetObject);
+		objname = targetUser + "." + targetObject;
+	}
 
 	//Set up file system
 	setUp();
@@ -57,9 +69,9 @@ int main(int argc, char *argv[]){
 	if(!groupExists(groupname))
 		printError("Invalid group");
 	User currentUser = users.find(username)->second;
-
-	// if(currentUser.hasFile(objname))
-	// 	cerr << "Object already exists, overwritting" << endl;
-	writeACL(objname);
+	if(testACL(username, groupname, objname, "p"))
+		writeACL(objname);
+	else
+		printError("Permission Denied");writeACL(objname);
 
 }
