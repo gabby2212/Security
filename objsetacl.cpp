@@ -4,20 +4,82 @@ using namespace std;
 #include <climits>
 #include <ctype.h>
 #include <getopt.h>
-#include "utilities.cpp"
+#include "fileSystem.cpp"
 #include <map>
 #include <signal.h>
 
 extern map<string, User>  users;
 extern list<string> groups;
-extern ACL currentACL;
+extern ACL acl;
+
+class Objsetacl :public FileSystem{
+private:
+	string username;
+	string groupname;
+	string objectname;
+public:
+	Objsetacl(string uname, string gname, string objname){
+		validateUserAndGroup(uname, gname);
+		objectname = getObjectName(uname, objname);
+		username = uname;
+		groupname = gname;
+	}
+
+	void setAcl(){
+		if(!acl.testACL(username, groupname, objectname, "p"))
+			printError("Permission denied");
+		writeACL();
+	}
+
+	void writeACL(){
+		string line;
+		string token;
+		ACLEntry *oldEntry;
+		ACLEntry *newEntry;
+		map<string, ACLEntry>::iterator aces = acl.ace.find(objectname);
+		if(aces == acl.ace.end())
+			printError("Invalid object");
+
+		oldEntry = &(aces->second);
+		newEntry = new ACLEntry(objectname);
+
+		while(getline(cin, line)) {
+			if(!(line.length() > MAX_INPUT)){
+				string user;
+				string group;
+				string permissions;
+				
+				istringstream iss(line);
+				std::getline(iss, token, '.');
+				if(token.empty())
+					printError("Usage user.group permissions");
+				user = token;
+				getline(iss, token);
+
+				istringstream iss2(token);
+				vector<string> tok{istream_iterator<string>{iss2}, istream_iterator<string>{}};
+				group = tok.front();
+				if(group.empty())
+					printError("Usage user.group permissions");
+				permissions = tok.back();
+				if(permissions.empty())
+					printError("Usage user.group permissions");
+				validateUserAndGroup(user, group);
+				
+				newEntry->userPermissions[user] = permissions;
+				newEntry->groupPermissions[group] = permissions;
+			}
+	    }
+	    acl.ace[objectname] = *newEntry;
+	    acl.saveACL();
+	}
+};
 
 int main(int argc, char *argv[]){
 	int opt;
 	string username;
 	string objname;
 	string groupname;
-	string userfile;
 	bool uname;
 	bool gname;
 	struct sigaction sigIntHandler;
@@ -28,6 +90,7 @@ int main(int argc, char *argv[]){
    	sigIntHandler.sa_flags = 0;
    	sigaction(SIGINT, &sigIntHandler, NULL);
    	sigaction(SIGTERM, &sigIntHandler, NULL);
+
    	//Check for valid input params
 	while((opt = getopt(argc, argv, "g:u:")) != ERROR){
 		switch(opt){
@@ -41,38 +104,11 @@ int main(int argc, char *argv[]){
 				break;
 		}
 	}
+	if(argc != 6 || !uname || !gname)
+		printError("Usage objsetacl -u username -g groupname objname");
 	objname = argv[5];
-	validNameString(username);
-	validNameString(groupname);
-	if(argc != 7 || !uname || !gname)
-		printError("Usage objsetacl -u username -g groupname objname (userfile)");
-	userfile = argv[6];
 
-	//Validate object
-	if(objname.find("+") == string::npos){
-		validNameString(objname);
-		objname = username + "." + objname;
-	}
-	else{
-		string targetUser = objname.substr(0, objname.find("+"));
-		string targetObject = objname.substr(objname.find("+") + 1, objname.length());
-		validNameString(targetUser);
-		validNameString(targetObject);
-		objname = targetUser + "." + targetObject;
-	}
-
-	//Set up file system
-	setUp(userfile);
-	initACL();
-
-	if(!userExists(username))
-		printError("Invalid user");
-	if(!groupExists(groupname))
-		printError("Invalid group");
-	User currentUser = users.find(username)->second;
-	if(testACL(username, groupname, objname, "p"))
-		writeACL(objname);
-	else
-		printError("Permission Denied");writeACL(objname);
+	Objsetacl *setAclObj = new Objsetacl(username, groupname, objname);
+	setAclObj->setAcl();
 	return 0;
 }

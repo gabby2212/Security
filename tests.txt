@@ -1,0 +1,137 @@
+OBJPUT
+./objput
+Usage objput -u username -g groupname objname
+
+./objput -u user -g g1 newfile
+Invalid user
+
+./objput -u u1 -g group newfile
+Invalid group
+
+./objput -u u1 -g g1 {}
+Invalid characters
+
+./objput -u u1 -g g1 newfile < test.txt
+
+./objput -u u1 -g g1 newfile < test.txt
+Object already exists, overwritting
+
+./objput -u u1 -g g1 u2+newfile < test.txt
+Cannot create file for another user
+
+(Test later)
+./objput -u u1 -g g1 u2.existingFile <test.txt
+
+OBJGET
+./objget
+Usage objget -u username -g groupname objname
+
+./objget -u user -g g1 newfile
+Invalid user
+
+./objget -u u1 -g group newfile
+Invalid group
+
+./objget -u u1 -g g1 {}
+Invalid characters
+
+./objget -u u1 -g g1 newfile
+Invalid object
+
+./objget -u u1 -g g1 existingFile
+this is a test file
+
+OBJLIST
+./objlist
+Usage objlist -u username (-l)
+
+./objlist -u user
+Invalid User
+
+./objlist -u u1
+existingFile
+
+./objlist -u u1 -l
+20 existingFile
+
+OBJSETACL
+./objsetacl
+Usage objsetacl -u username -g groupname objname
+
+./objsetacl -u user -g g1 existingFile
+Invalid user
+
+./objsetacl -u u1 -g group existingFile
+Invalid group
+
+./objsetacl -u u1 -g g1 {}
+Invalid characters
+
+./objsetacl -u u2 -g g4 u1+existingFile < testFileForOnly2.txt
+
+./objsetacl -u u1 -g g4 existingFile < testFileFor1and2.txt
+User not in group
+
+./objsetacl -u u1 -g g3 existingFile < testFileFor1and2.txt
+Permission denied
+
+./objsetacl -u u2 -g g4 fileForOnly2 < testFileForOnly2.txt
+
+./objsetacl -u u1 -g g1 u2+fileForOnly2 < testFileForOnly2.txt
+Permission denied
+
+./objsetacl -u u2 -g g4 fileFor1and2 < testFileFor1and2.txt
+
+./objsetacl -u u1 -g g1 u2+fileFor1and2 < testFileFor1and2.txt
+
+./objsetacl -u u1 -g g1 fileForGroup1Only < testFileForGroup1.txt
+
+./objsetacl -u u2 -g g4 u1+fileForGroup1Only < testFileForGroup1.txt
+Permission denied
+
+./objsetacl -u u2 -g g1 u1+fileForGroup1Only < testFileForGroup1.txt
+
+OBJGETACL
+./objgetacl
+Usage objgetacl -u username -g groupname objname
+
+./objgetacl -u user -g g1 newfile
+Invalid user
+
+./objgetacl -u u1 -g group newfile
+Invalid group
+
+./objgetacl -u u1 -g g1 {}
+Invalid characters
+
+./objgetacl -u u1 -g g1 newfile
+Invalid object
+
+./objgetacl -u u2 -g g4 fileFor1and2
+rwxpv u1
+rwxpv u2
+rwxpv g3
+rwxpv g4
+
+./objgetacl -u u1 -g g3 u2+fileForOnly2
+Permission denied
+
+OBJTESTACL
+./objtestacl
+Usage objtestacl -u username -g groupname -a access objname
+
+./objtestacl -u user -g g1 -a r newfile
+Invalid user
+
+./objtestacl -u u1 -g group -a r newfile
+Invalid group
+
+./objtestacl -u u1 -g g1 -a r {}
+Invalid characters
+
+./objtestacl -u u1 -g g1 -a r u2+fileForOnly2
+denied
+
+./objtestacl -u u1 -g g1 -a r fileForGroup1Only
+allowed
+

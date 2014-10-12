@@ -5,17 +5,65 @@ using namespace std;
 #include <climits>
 #include <ctype.h>
 #include <getopt.h>
-#include "utilities.cpp"
+#include <vector>
+#include "fileSystem.cpp"
 #include <map>
 #include <signal.h>
 
 extern map<string, User>  users;
+extern list<string> groups;
+extern ACL acl;
+
+class Objlist :public FileSystem{
+private:
+	string username;
+	string objectname;
+	bool metaData;
+public:
+	Objlist(string uname, bool meta){
+		validNameString(uname);
+		if(!userExists(uname))
+			printError("Invalid User");
+		username = uname;
+		metaData = meta;
+	}
+	long fileSize(string filename){
+		FILE *fp;
+		long size = 0;
+		string fname = username + "." + filename;
+
+		fp = fopen(fname.c_str(), "r");
+		if(fp == NULL)
+			printError("Error opening file");
+		fseek(fp, 0, SEEK_END);
+		size = ftell(fp);
+		if(size < 0)
+			printError("Error reading file");
+		fclose(fp);
+		return size;
+	}
+
+	void printFiles(){
+		string line;
+		long size;
+		vector<string>::iterator it;
+		User currentUser = users.find(username)->second;
+		vector<string> files = currentUser.getFiles();
+
+		for (it = files.begin() ; it != files.end(); ++it){
+		  	if(!metaData)
+		        cout << *it << endl;
+	    	else{
+	    		size = fileSize(*it);
+	    		cout << size << " " << *it << endl; 
+	    	}
+		}
+	}
+};
 
 int main(int argc, char *argv[]){
 	int opt;
 	string username;
-	string objname;
-	string userfile;
 	struct sigaction sigIntHandler;
 	bool meta = false;
 	bool uname = false;
@@ -39,18 +87,10 @@ int main(int argc, char *argv[]){
 				break;
 		}
 	}
-	if(!uname || (!meta && argc != 4) || (meta && argc != 5))
-		printError("Usage objlist -u username (-l) (userfile)");
-	validNameString(username);
-	if(!meta)
-		userfile = argv[3];
-	else
-		userfile = argv[4];
-	//Set up file system
-	setUp(userfile);
+	if(!uname || (!meta && argc != 3) || (meta && argc != 4))
+		printError("Usage objlist -u username (-l)");
 
-	if(!userExists(username))
-		printError("Invalid user");
-	printFiles(username, meta);
+	Objlist *listObj = new Objlist(username, meta);
+	listObj->printFiles();
 	return 0;
 }

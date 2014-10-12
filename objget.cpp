@@ -1,22 +1,51 @@
 using namespace std;
-
 #include <cstdio>
 #include <cstdlib>
 #include <climits>
 #include <ctype.h>
 #include <getopt.h>
-#include "utilities.cpp"
+#include "fileSystem.cpp"
 #include <map>
 #include <signal.h>
 
 extern map<string, User>  users;
+extern list<string> groups;
+extern ACL acl;
+class Objget :public FileSystem{
+private:
+	string username;
+	string groupname;
+	string objectname;
+public:
+	Objget(string uname, string gname, string objname){
+		validateUserAndGroup(uname, gname);
+		objectname = getObjectName(uname, objname);
+		username = uname;
+		groupname = gname;
+	}
+	void readFile(){
+		string line;
+		ifstream file;
+		if(!acl.testACL(username, groupname, objectname, "r"))
+			printError("Permission denied");
+
+		file.open(objectname.c_str());
+		if(file.is_open())
+		{
+			while(getline(file, line))
+				cout << line << endl;
+			file.close();	
+		}
+		else
+			printError("Couldn't open file");
+	}
+};
 
 int main(int argc, char *argv[]){
 	int opt;
 	string username;
 	string groupname;
 	string objname;
-	string userfile;
 	bool uname = false;
 	bool gname = false;
 	struct sigaction sigIntHandler;
@@ -28,7 +57,6 @@ int main(int argc, char *argv[]){
    	sigaction(SIGINT, &sigIntHandler, NULL);
    	sigaction(SIGTERM, &sigIntHandler, NULL);
 
-   	//Check for valid input params
 	//Check for valid input params
 	while((opt = getopt(argc, argv, "g:u:")) != ERROR){
 		switch(opt){
@@ -42,24 +70,11 @@ int main(int argc, char *argv[]){
 				break;
 		}
 	}
+	if(!uname || !gname || argc != 6)
+		printError("Usage objget -u username -g groupname objname");
 	objname = argv[5];
-	validNameString(username);
-	validNameString(groupname);	
-	if(!uname || !gname || argc != 7)
-		printError("Usage objget -u username -g groupname objname (usefile)");
-	validNameString(objname);
-	string aclObjname = username + "." + objname;
-	userfile = argv[6];
 
-	//Set up file system
-	setUp(userfile);
-	initACL();
-
-	if(!userExists(username))
-		printError("Invalid user");
-	if(testACL(username, groupname, aclObjname, "r"))
-		readFile(objname, username);
-	else
-		printError("Permission denied");
+	Objget *getObj = new Objget(username, groupname, objname);
+	getObj->readFile();
 	return 0;
 }

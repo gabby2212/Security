@@ -1,4 +1,18 @@
-u1.test.txt:
+u1.existingFile:
+user u2 rwxpv
+group g4 rwxpv
+
+u1.fileForGroup1Only:
 user u1 rwxpv
-group * rwxpv
+group g1 rwxpv
+
+u2.fileFor1and2:
+user u1 rwxpv
+user u2 rwxpv
+group g3 rwxpv
+group g4 rwxpv
+
+u2.fileForOnly2:
+user u2 rwxpv
+group g4 rwxpv
 

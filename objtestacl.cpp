@@ -4,13 +4,37 @@ using namespace std;
 #include <climits>
 #include <ctype.h>
 #include <getopt.h>
-#include "utilities.cpp"
+#include "fileSystem.cpp"
 #include <map>
 #include <signal.h>
-
 extern map<string, User>  users;
 extern list<string> groups;
-extern ACL currentACL;
+extern ACL acl;
+
+class Objtestacl :public FileSystem{
+private:
+	string username;
+	string groupname;
+	string objectname;
+	string access;
+public:
+	Objtestacl(string uname, string gname, string objname, string a){
+		validateUserAndGroup(uname, gname);
+		if(a.length() != 1)
+			printError("Please check one acess at a time");
+		objectname = getObjectName(uname, objname);
+		username = uname;
+		groupname = gname;
+		access = a;
+	}
+
+	void test(){
+		if(acl.testACL(username, groupname, objectname, access))
+			cout << "allowed" << endl;
+		else
+			cout << "denied" << endl;
+	}	
+};
 
 int main(int argc, char *argv[]){
 	int opt;
@@ -18,7 +42,6 @@ int main(int argc, char *argv[]){
 	string objname;
 	string groupname;
 	string access;
-	string userfile;
 	bool uname = false;
 	bool gname = false;
 	bool ac = false;
@@ -30,6 +53,7 @@ int main(int argc, char *argv[]){
    	sigIntHandler.sa_flags = 0;
    	sigaction(SIGINT, &sigIntHandler, NULL);
    	sigaction(SIGTERM, &sigIntHandler, NULL);
+   	
    	//Check for valid input params
 	while((opt = getopt(argc, argv, "g:u:a:")) != ERROR){
 		switch(opt){
@@ -47,43 +71,11 @@ int main(int argc, char *argv[]){
 				break;
 		}
 	}
-	if(argc != 9 || !uname || !gname)
-		printError("Usage objtestacl -u username -g groupname -a acess objname (userfile)");
-
+	if(argc != 8 || !uname || !gname)
+		printError("Usage objtestacl -u username -g groupname -a access objname");
 	objname = argv[7];
-	validNameString(username);
-	validNameString(groupname);
-	validPermissions(access);
-	userfile = argv[8];
 
-	//Validate object
-	if(objname.find("+") == string::npos){
-		validNameString(objname);
-		objname = username + "." + objname;
-	}
-	else{
-		string targetUser = objname.substr(0, objname.find("+"));
-		string targetObject = objname.substr(objname.find("+") + 1, objname.length());
-		validNameString(targetUser);
-		validNameString(targetObject);
-		objname = targetUser + "." + targetObject;
-	}
-	
-	//Set up file system
-	setUp(userfile);
-	initACL();
-
-	if(!userExists(username))
-		printError("Invalid user");
-	if(!groupExists(groupname))
-		printError("Invalid group");
-	if(access.length() != 1)
-		printError("Please check one acess at a time");
-	User currentUser = users.find(username)->second;
-
-	if(testACL(username, groupname, objname, access))
-		cout << "allowed" << endl;
-	else
-		cout << "denied" << endl;
+	Objtestacl *testaclObj = new Objtestacl(username, groupname, objname, access);
+	testaclObj->test();
 	return 0;
 }

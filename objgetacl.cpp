@@ -4,20 +4,50 @@ using namespace std;
 #include <climits>
 #include <ctype.h>
 #include <getopt.h>
-#include "utilities.cpp"
+#include "fileSystem.cpp"
 #include <map>
 #include <signal.h>
 
 extern map<string, User>  users;
 extern list<string> groups;
-extern ACL currentACL;
+extern ACL acl;
+
+class Objgetacl :public FileSystem{
+private:
+	string username;
+	string groupname;
+	string objectname;
+public:
+	Objgetacl(string uname, string gname, string objname){
+		validateUserAndGroup(uname, gname);
+		objectname = getObjectName(uname, objname);
+		username = uname;
+		groupname = gname;
+	}
+
+	void getACL(){
+		if(!acl.testACL(username, groupname, objectname, "v"))
+			printError("Permission denied");
+		readACL();
+	}
+
+	void readACL(){
+		ACLEntry a;
+		if(acl.ace.find(objectname) == acl.ace.end())
+			printError("Invalid object");
+		a = acl.ace.find(objectname)->second;
+		for (map<string,string>::iterator it = a.userPermissions.begin(); it != a.userPermissions.end(); ++it)
+	    	cout << it->second << " " << it->first << endl;
+		for (map<string,string>::iterator it2 = a.groupPermissions.begin(); it2 != a.groupPermissions.end(); ++it2)
+			cout << it2->second << " " << it2->first << endl;
+	}
+};
 
 int main(int argc, char *argv[]){
 	int opt;
 	string username;
 	string objname;
 	string groupname;
-	string userfile;
 	bool uname;
 	bool gname;
 	struct sigaction sigIntHandler;
@@ -28,6 +58,7 @@ int main(int argc, char *argv[]){
    	sigIntHandler.sa_flags = 0;
    	sigaction(SIGINT, &sigIntHandler, NULL);
    	sigaction(SIGTERM, &sigIntHandler, NULL);
+
    	//Check for valid input params
 	while((opt = getopt(argc, argv, "g:u:")) != ERROR){
 		switch(opt){
@@ -41,41 +72,12 @@ int main(int argc, char *argv[]){
 				break;
 		}
 	}
+	if(argc != 6 || !uname || !gname)
+		printError("Usage objgetacl -u username -g groupname objname");
 	objname = argv[5];
-	validNameString(username);
-	validNameString(groupname);
-	if(argc != 7 || !uname || !gname)
-		printError("Usage objgetacl -u username -g groupname objname (userfile)");
-	userfile = argv[6];
 
-	//Validate object
-	if(objname.find("+") == string::npos){
-		validNameString(objname);
-		objname = username + "." + objname;
-	}
-	else{
-		string targetUser = objname.substr(0, objname.find("+"));
-		string targetObject = objname.substr(objname.find("+") + 1, objname.length());
-		validNameString(targetUser);
-		validNameString(targetObject);
-		objname = targetUser + "." + targetObject;
-	}
-
-
-	//Set up file system
-	setUp(userfile);
-	initACL();
-
-	if(!userExists(username))
-		printError("Invalid user");
-	if(!groupExists(groupname))
-		printError("Invalid group");
-	User currentUser = users.find(username)->second;
-
-	if(testACL(username, groupname, objname, "v"))
-		getACL(objname);
-	else
-		printError("Permission Denied");
+	Objgetacl *getaclObj = new Objgetacl(username, groupname, objname);
+	getaclObj->getACL();
 	return 0;
 
 }
