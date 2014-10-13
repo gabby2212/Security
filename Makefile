@@ -7,9 +7,16 @@ exec:
 build: all
 
 test: build
-	./objput -u u1 -g g1 test.txt< test.txt userfile.txt
-	./objgetacl -u u1 -g g1 test.txt userfile.txt
-	./objget -u u1 -g g1 test.txt userfile.txt
+	@read -r -p "Are you sure? This will erase your current file system " response; \
+	[ $$response = "y" ] || [ $$response = "Y" ] || (echo "Exiting."; exit 1;)
+	rm -f u1.* u2.*
+	> aclFile
+	./testFiles/objput-tests.sh
+	./testFiles/objget-tests.sh
+	./testFiles/objlist-tests.sh
+	./testFiles/objsetacl-tests.sh
+	./testFiles/objgetacl-tests.sh
+	./testFiles/objtestacl-tests.sh
 
 all: objput objget objlist objsetacl objgetacl objtestacl
 

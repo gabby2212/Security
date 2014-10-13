@@ -2,6 +2,7 @@ using namespace std;
 #include <vector>
 #include <string>
 #include <iostream>
+#include <algorithm>
 class User{
 public:
 	string username;
@@ -38,10 +39,8 @@ public:
 	}
 
 	bool hasFile(string filename){
-		for (vector<string>::iterator it = files.begin() ; it != files.end(); ++it){
-			if(filename.compare(*it) == 0)
-				return true;
-		}
+		if(find(files.begin(), files.end(), filename) != files.end())
+			return true;
 		return false;
 	}
 

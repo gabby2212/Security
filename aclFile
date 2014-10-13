@@ -6,6 +6,12 @@ u1.fileForGroup1Only:
 user u1 rwxpv
 group g1 rwxpv
 
+u1.newfile:
+user u1 rwxpv
+user u2 v
+group * v
+group g3 rwxpv
+
 u2.fileFor1and2:
 user u1 rwxpv
 user u2 rwxpv

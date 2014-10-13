@@ -23,7 +23,7 @@ public:
 	Objlist(string uname, bool meta){
 		validNameString(uname);
 		if(!userExists(uname))
-			printError("Invalid User");
+			printError("Invalid user");
 		username = uname;
 		metaData = meta;
 	}

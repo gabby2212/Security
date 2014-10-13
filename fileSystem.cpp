@@ -172,10 +172,11 @@ public:
 			printError("Invalid user");
 		if(!groupExists(groupname))
 			printError("Invalid group");
-		thisUser =  users.find(username)->second;
-		thisGroups = thisUser.getGroups();
-		if(find(thisGroups.begin(), thisGroups.end(), groupname) == thisGroups.end())
-			printError("User not in group");
-
+		if(groupname != "*"){
+			thisUser =  users.find(username)->second;
+			thisGroups = thisUser.getGroups();
+			if(find(thisGroups.begin(), thisGroups.end(), groupname) == thisGroups.end())
+				printError("User not in group");
+		}
 	}
 };
