@@ -1,8 +1,13 @@
 FLAGS = -std=c++0x
-FILE := userfile.txt
-
-exec:
-	./$(TARGET) $(ARGS) $(FILE)
+PHONY: exec
+ 
+ifneq "$(strip $(userfile))" ""
+exec: build
+	> userfile.txt
+	cat $(userfile) > userfile.txt 
+else
+exec: build
+endif
 
 build: all
 
