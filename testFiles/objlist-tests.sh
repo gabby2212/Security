@@ -6,7 +6,7 @@ if [ "$output" != "Usage objlist -u username (-l)" ]; then
 fi
 
 output="$(./objlist -u user 2>&1)"
-if [ "$output" != "Invalid User" ]; then
+if [ "$output" != "Invalid user" ]; then
 	echo failed 2
 fi
 
