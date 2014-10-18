@@ -3,20 +3,33 @@ using namespace std;
 #include "user.cpp"
 #include "utilities.cpp"
 #include "ACL.cpp"
+#include <sys/types.h>
+#include <pwd.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <grp.h>
+
 static map<string, User>  users;
 static list<string> groups;
 static ACL acl;
 
 class FileSystem{
 public:
+	string username;
+	string groupname;
+
 	FileSystem(){
+		setUserAndGroup();
+		//changeUid();
 		setUp();
 		initACL();
 	}
 	void setUp(){
 		string line;
 		string tok;
-		string userfile = "userfile.txt";
+		string userfile = "./config/userfile.txt";
 
 		//Create users
 		ifstream userFile(userfile);
@@ -48,6 +61,9 @@ public:
 			    	printError("Alloc failed");
 			    }
 
+			    //Skip :
+			    ++i;
+
 			    //Read and validate groups
 			    for(++i; i != tokens.end(); ++i){
 			    	tok = (*i);
@@ -60,15 +76,17 @@ public:
 			}
 			userFile.close();	
 		}
-		else
+		else{
+			printf("%s", strerror(errno));
 			printError("Couldn't open userfile");
+		}
 	}
 	void initACL(){
 		string line;
 		string token;
 		string username;
 
-		ifstream aclFile("aclFile");
+		ifstream aclFile("./config/aclFile");
 		if(aclFile.is_open())
 		{
 			while(getline(aclFile, line)){
@@ -120,7 +138,7 @@ public:
 			    	if(++i == tokens.end())
 			    		printError("Invalid aclFile");
 			    	permissions = (*i);
-
+			    
 			    	//validate line, add to acl entry
 			    	validNameString(entityName);
 			    	validPermissions(permissions);
@@ -144,7 +162,7 @@ public:
 		else{
 			//File system is empty create aclFile
 			ofstream aclFile;
-			aclFile.open("aclFile");
+			aclFile.open("../config/aclFile");
 			aclFile.close();
 		}
 	}
@@ -178,5 +196,23 @@ public:
 			if(find(thisGroups.begin(), thisGroups.end(), groupname) == thisGroups.end())
 				printError("User not in group");
 		}
+	}
+
+	// void changeUid(){
+	// 	struct passwd *managerUser = getpwnam("fsManager");
+	// 	uid_t managerID = managerUser->pw_uid;
+	// 	if(setuid(managerID) != 0){
+	// 		printf("%s", strerror(errno));
+	// 		printError("Couldn't change the user of this process");
+	// 	}
+	// }
+
+	void setUserAndGroup(){
+		uid_t  uid = getuid();
+		uid_t  gid = getgid();
+		struct passwd *currentUser = getpwuid(uid);
+		struct group *currentGroup = getgrgid(gid);
+		username = currentUser->pw_name;
+		groupname = currentGroup->gr_name;
 	}
 };

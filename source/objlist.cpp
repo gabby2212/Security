@@ -17,20 +17,16 @@ extern ACL acl;
 class Objlist :public FileSystem{
 private:
 	string username;
-	string objectname;
 	bool metaData;
 public:
-	Objlist(string uname, bool meta){
-		validNameString(uname);
-		if(!userExists(uname))
-			printError("Invalid user");
-		username = uname;
+	Objlist(bool meta){
+		username = FileSystem::username;
 		metaData = meta;
 	}
 	long fileSize(string filename){
 		FILE *fp;
 		long size = 0;
-		string fname = username + "." + filename;
+		string fname = "./fileSystem/" + username + "." + filename;
 
 		fp = fopen(fname.c_str(), "r");
 		if(fp == NULL)
@@ -63,10 +59,8 @@ public:
 
 int main(int argc, char *argv[]){
 	int opt;
-	string username;
 	struct sigaction sigIntHandler;
 	bool meta = false;
-	bool uname = false;
 
    	//Start signal handling to capture crtl+C and ctrl+D
    	sigIntHandler.sa_handler = sig_handle;
@@ -76,21 +70,17 @@ int main(int argc, char *argv[]){
    	sigaction(SIGTERM, &sigIntHandler, NULL);
 
    	//Check for valid input params
-	while((opt = getopt(argc, argv, "lu:")) != ERROR){
+	while((opt = getopt(argc, argv, "l")) != ERROR){
 		switch(opt){
-			case 'u':
-				uname = true;
-				username = optarg;
-				break;
 			case 'l':
 				meta = true;
 				break;
 		}
 	}
-	if(!uname || (!meta && argc != 3) || (meta && argc != 4))
-		printError("Usage objlist -u username (-l)");
+	if((!meta && argc != 1) || (meta && argc != 2))
+		printError("Usage objlist (-l)");
 
-	Objlist *listObj = new Objlist(username, meta);
+	Objlist *listObj = new Objlist(meta);
 	listObj->printFiles();
 	return 0;
 }

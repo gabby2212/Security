@@ -17,11 +17,10 @@ private:
 	string groupname;
 	string objectname;
 public:
-	Objget(string uname, string gname, string objname){
-		validateUserAndGroup(uname, gname);
-		objectname = getObjectName(uname, objname);
-		username = uname;
-		groupname = gname;
+	Objget(string objname){
+		username = FileSystem::username;
+		groupname = FileSystem::groupname;
+		objectname = getObjectName(username, objname);
 	}
 	void readFile(){
 		string line;
@@ -29,7 +28,7 @@ public:
 		if(!acl.testACL(username, groupname, objectname, "r"))
 			printError("Permission denied");
 
-		file.open(objectname.c_str());
+		file.open(("./fileSystem/" + objectname).c_str());
 		if(file.is_open())
 		{
 			while(getline(file, line))
@@ -43,12 +42,8 @@ public:
 
 int main(int argc, char *argv[]){
 	int opt;
-	string username;
-	string groupname;
-	string objname;
-	bool uname = false;
-	bool gname = false;
 	struct sigaction sigIntHandler;
+	string objname;
 
 	//Start signal handling to capture crtl+C and ctrl+D
    	sigIntHandler.sa_handler = sig_handle;
@@ -57,24 +52,11 @@ int main(int argc, char *argv[]){
    	sigaction(SIGINT, &sigIntHandler, NULL);
    	sigaction(SIGTERM, &sigIntHandler, NULL);
 
-	//Check for valid input params
-	while((opt = getopt(argc, argv, "g:u:")) != ERROR){
-		switch(opt){
-			case 'u':
-				uname = true;
-				username = optarg;
-				break;
-			case 'g':
-				gname = true;
-				groupname = optarg;
-				break;
-		}
-	}
-	if(!uname || !gname || argc != 6)
-		printError("Usage objget -u username -g groupname objname");
-	objname = argv[5];
+	if(argc != 2)
+		printError("Usage objget objname");
+	objname = argv[1];
 
-	Objget *getObj = new Objget(username, groupname, objname);
+	Objget *getObj = new Objget(objname);
 	getObj->readFile();
 	return 0;
 }

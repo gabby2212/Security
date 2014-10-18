@@ -96,7 +96,7 @@ public:
 
 
 	void saveACL(){
-		ofstream file("aclFile",ios::out);
+		ofstream file("./config/aclFile",ios::out);
 		map<string, ACLEntry> aclss = ace;
 		for (map<string, ACLEntry>::iterator it = aclss.begin(); it != aclss.end(); it++){
 	    	ACLEntry thisyeah = it->second;

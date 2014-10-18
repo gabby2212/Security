@@ -18,13 +18,12 @@ private:
 	string objectname;
 	string access;
 public:
-	Objtestacl(string uname, string gname, string objname, string a){
-		validateUserAndGroup(uname, gname);
+	Objtestacl(string objname, string a){
 		if(a.length() != 1)
 			printError("Please check one acess at a time");
-		objectname = getObjectName(uname, objname);
-		username = uname;
-		groupname = gname;
+		username = FileSystem::username;
+		groupname = FileSystem::groupname;
+		objectname = getObjectName(username, objname);
 		access = a;
 	}
 
@@ -38,12 +37,8 @@ public:
 
 int main(int argc, char *argv[]){
 	int opt;
-	string username;
 	string objname;
-	string groupname;
 	string access;
-	bool uname = false;
-	bool gname = false;
 	bool ac = false;
 	struct sigaction sigIntHandler;
 
@@ -55,27 +50,19 @@ int main(int argc, char *argv[]){
    	sigaction(SIGTERM, &sigIntHandler, NULL);
    	
    	//Check for valid input params
-	while((opt = getopt(argc, argv, "g:u:a:")) != ERROR){
+	while((opt = getopt(argc, argv, "a:")) != ERROR){
 		switch(opt){
-			case 'u':
-				uname = true;
-				username = optarg;
-				break;
-			case 'g':
-				gname = true;
-				groupname = optarg;
-				break;
 			case 'a':
 				ac = true;
 				access = optarg;
 				break;
 		}
 	}
-	if(argc != 8 || !uname || !gname)
-		printError("Usage objtestacl -u username -g groupname -a access objname");
-	objname = argv[7];
+	if(argc != 4 || !ac)
+		printError("Usage objtestacl -a access objname");
+	objname = argv[3];
 
-	Objtestacl *testaclObj = new Objtestacl(username, groupname, objname, access);
+	Objtestacl *testaclObj = new Objtestacl(objname, access);
 	testaclObj->test();
 	return 0;
 }

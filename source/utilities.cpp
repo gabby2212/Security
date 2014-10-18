@@ -14,7 +14,7 @@ using namespace std;
 #include <regex>
 
 #define MAX_USERNAME_SIZE 25
-#define VALID_CHARS ".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_"
+#define VALID_CHARS ".-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_"
 #define ERROR -1
 
 void sig_handle(int s){
