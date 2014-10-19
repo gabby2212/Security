@@ -10,8 +10,8 @@ if [ "$output" != "No passwd entry for user 'foo'" ]; then
 	echo failed 2
 fi
 
-output="$(su gabi:foo -c "./objput newfile" 2>&1)"
-if [ "$output" != "No passwd entry for user 'gabi:foo'" ]; then
+output="$(su u1:foo -c "./objput newfile" 2>&1)"
+if [ "$output" != "No passwd entry for user 'u1:foo'" ]; then
 	echo failed 3
 fi
 
@@ -20,27 +20,27 @@ if [ "$output" != "Invalid characters" ]; then
 	echo failed 4
 fi
 
-var="$(su gabi -c "./objput newfile < testFiles/test.txt")"
+var="$(su u1 -c "./objput newfile < testFiles/test.txt")"
 if [ "$var" != "" ]; then
 	echo failed 5
 fi
 
-output="$(su gabi -c "./objput newfile < testFiles/test.txt" 2>&1 )"
+output="$(su u1 -c "./objput newfile < testFiles/test.txt" 2>&1 )"
 if [ "$output" != "Object already exists, overwritting" ]; then
 	echo failed 6
 fi
 
-output="$(su gabi -c "./objput fsManager+newfile < testFiles/test.txt" 2>&1)"
+output="$(su u1 -c "./objput u2+newfile < testFiles/test.txt" 2>&1)"
 if [ "$output" != "Cannot create file for another user" ]; then
 	echo failed 7
 fi
 
-output="$(su gabi -c "./objsetacl newfile < testFiles/testFileForOnly1.txt" 2>&1)"
+output="$(su u1 -c "./objsetacl newfile < testFiles/testFileForOnly1.txt" 2>&1)"
 if [ "$var" != "" ]; then
 	echo failed 8
 fi
 
-output="$(su fsManager -c "./objput gabi+newfile < testFiles/test.txt" 2>&1)"
+output="$(su u2 -c "./objput u1+newfile < testFiles/test.txt" 2>&1)"
 if [ "$output" != "Permission denied" ]; then
 	echo failed 9
 fi

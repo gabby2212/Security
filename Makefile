@@ -15,7 +15,7 @@ test: build
 	@read -r -p "Are you sure? This will erase your current file system " response; \
 	[ $$response = "y" ] || [ $$response = "Y" ] || (echo "Exiting."; exit 1;)
 	rm -fr config fileSystem
-	./setUp.sh
+	./setUp.sh ./testFiles/testuserfile.txt
 	./testFiles/objput-tests.sh
 	./testFiles/objget-tests.sh
 	./testFiles/objlist-tests.sh
