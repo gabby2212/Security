@@ -10,8 +10,7 @@ using namespace std;
 #include <map>
 #include <signal.h>
 
-extern map<string, User>  users;
-extern list<string> groups;
+extern map<string, vector<string>>  users;
 extern ACL acl;
 
 class Objlist :public FileSystem{
@@ -43,8 +42,7 @@ public:
 		string line;
 		long size;
 		vector<string>::iterator it;
-		User currentUser = users.find(username)->second;
-		vector<string> files = currentUser.getFiles();
+		vector<string> files = users.find(username)->second;
 
 		for (it = files.begin() ; it != files.end(); ++it){
 		  	if(!metaData)

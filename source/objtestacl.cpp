@@ -7,8 +7,8 @@ using namespace std;
 #include "fileSystem.cpp"
 #include <map>
 #include <signal.h>
-extern map<string, User>  users;
-extern list<string> groups;
+
+extern map<string, vector<string>>  users;
 extern ACL acl;
 
 class Objtestacl :public FileSystem{

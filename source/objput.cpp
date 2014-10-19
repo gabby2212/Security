@@ -8,8 +8,8 @@ using namespace std;
 #include <map>
 #include <signal.h>
 #include "fileSystem.cpp"
-extern map<string, User>  users;
-extern list<string> groups;
+
+extern map<string, vector<string>>  users;
 extern ACL acl;
 
 class Objput :public FileSystem{
@@ -30,26 +30,25 @@ public:
 	void writeFile(){
 		string line;
 		string fileOwner;
-		User ownerUser;
+		vector<string> *currentFiles;
 		string filename = objectname.substr(objectname.find(".") + 1, objectname.length());
-		User currentUser = users.find(username)->second;
 
 		//If current user is not the owner check if file/owner exist
 		fileOwner = getOwner(objectname);
 		if(!userExists(fileOwner))
 			printError("Invalid user");
-		ownerUser = users.find(fileOwner)->second;
-		if(fileOwner.compare(username) != 0 && !ownerUser.hasFile(filename))
+		if(fileOwner.compare(username) != 0 && !hasFile(fileOwner, filename))
 			printError("Cannot create file for another user");
 
 		//If current user is owner and new file, create file
-		if(fileOwner.compare(username) == 0 && !currentUser.hasFile(filename)){
+		if(fileOwner.compare(username) == 0 && !hasFile(username, filename)){
 			ACLEntry *a = new ACLEntry(objectname, username);
 			a->userPermissions[username] = "rwxpv";
 			a->groupPermissions["*"] = "rwxpv";
 			acl.ace[objectname] = *a;
 			acl.saveACL();
-			currentUser.addFile(filename);
+			currentFiles = &(users.find(username)->second);
+			currentFiles->push_back(filename);
 		}
 		//If file exists test ACL
 		else{
@@ -68,8 +67,10 @@ public:
 		    }
 	    	newFile.close();
 		}
-		else
+		else{
+			printf("%s", strerror(errno));
 			printError("Couldn't create/open file");   
+		}
 	}
 };
 

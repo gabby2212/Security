@@ -1,5 +1,5 @@
 using namespace std;
-#include <list>
+#include <vector>
 class ACLEntry{
 public:
 	string objname;
@@ -69,8 +69,10 @@ public:
 	bool testACL(string uname, string gname, string objname, string access){
 		ACLEntry a;
 		string perm;
+		vector<string> groups;
 		if(ace.find(objname) == ace.end())
 			printError("Invalid object");
+		groups = getUserGroups(uname);
 
 		//check user permissions
 		a = ace.find(objname)->second;
@@ -85,13 +87,17 @@ public:
 			if(perm.find(access) != string::npos)
 				return true;
 		}
-		else if(a.groupPermissions.find(gname) != a.groupPermissions.end()){
-			perm = a.groupPermissions.find(gname)->second;
-			if(perm.find(access) != string::npos)
-				return true;
+		else{
+			for(vector<string>::iterator it = groups.begin(); it != groups.end(); ++it) {
+				string group = *it;
+				if(a.groupPermissions.find(group) != a.groupPermissions.end()){
+					perm = a.groupPermissions.find(group)->second;
+					if(perm.find(access) != string::npos)
+						return true;	
+				}		
+			}
 		}
 		return false;
-		
 	}
 
 
@@ -108,5 +114,44 @@ public:
 	    	file << endl;
 		}
 		file.close();
+	}
+
+	vector<string> getUserGroups(string username){
+		string line;
+		string tok;
+		string userfile = "./config/userfile.txt";
+		vector<string> groups;
+
+		//Get user's groups from userfile.txt
+		ifstream userFile(userfile);
+		if(userFile.is_open())
+		{
+			while(getline(userFile, line)){
+				string uname;
+				//Separate line by spaces
+				istringstream buf(line);
+			    istream_iterator<string> beg(buf), end;
+			    vector<string> tokens(beg, end);
+			    vector<string>::const_iterator i;
+
+			    i = tokens.begin();
+		        uname = (*i);
+
+		        validNameString(uname);
+				if(uname.compare(username) == 0 && ++i != tokens.end()){
+				    //Read and validate groups
+				    for(++i; i != tokens.end(); ++i){
+				    	tok = (*i);
+						validNameString(tok);
+  					    groups.push_back(tok);
+				    }
+				    userFile.close();
+				    return groups;
+				}
+			}
+			userFile.close();	
+		}
+		else
+			printError("Couldn't open userfile");
 	}
 };
