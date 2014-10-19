@@ -26,10 +26,10 @@ if [ "$output" != "Invalid object" ]; then
 fi
 
 var="$(su u2 -c "./objgetacl fileFor1and2")"
-if [ "$var" != "rwxpv u2
-rwxpv u1
+if [ "$var" != "rwxpv u1
 rwxpv u2
-rwxpv u1" ]; then
+rwxpv g3
+rwxpv g4" ]; then
 	echo failed 6
 fi
 
