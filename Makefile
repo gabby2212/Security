@@ -3,10 +3,10 @@ PHONY: exec
  
 ifneq "$(strip $(userfile))" ""
 exec: build
-	./setUp.sh $(userfile)
+	./source/setUp.sh $(userfile)
 else
 exec: build
-	./setUp.sh
+	./source/setUp.sh
 endif
 
 build: all
@@ -15,13 +15,14 @@ test: build
 	@read -r -p "Are you sure? This will erase your current file system " response; \
 	[ $$response = "y" ] || [ $$response = "Y" ] || (echo "Exiting."; exit 1;)
 	rm -fr config fileSystem
-	./setUp.sh ./testFiles/testuserfile.txt
+	./source/setUp.sh ./testFiles/testuserfile.txt
 	./testFiles/objput-tests.sh
 	./testFiles/objget-tests.sh
 	./testFiles/objlist-tests.sh
 	./testFiles/objsetacl-tests.sh
 	./testFiles/objgetacl-tests.sh
 	./testFiles/objtestacl-tests.sh
+	./testFiles/generalTests.sh
 
 all: objput objget objlist objsetacl objgetacl objtestacl
 
@@ -48,4 +49,4 @@ clean:
 
 emptyFs:
 	rm -fr fileSystem config
-	./setUp.sh
+	./source/setUp.sh

@@ -9,6 +9,14 @@ I chose to use a non-root user for 2 main reasons:
 
 I am using the system's user and groups, but I kept the user.cpp object in order to avoid system calls. The users and groups are loaded at startup and from there on the user object is used.
 
+Passwords for the TA's:
+tinyvm root123
+gabi user123
+fsManager manager
+
+other users don't have passwords.
+
+
 setUp.sh:
 Assumptions -
 The set up script assumes there exists a user called fsManager and a group called fsManager. The user fsManager should only belong to the fsManager group.

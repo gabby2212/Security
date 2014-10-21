@@ -10,11 +10,11 @@ if [ "$output" != "cat: config/userfile.txt: Permission denied" ]; then
 fi
 
 output="$(su u1 -c "mv myuserfile.txt config/userfile.txt" 2>&1)"
-if [ "$output" != "mv: accessing config/userfile.txt: Permission denied" ]; then
+if [ "$output" != "mv: failed to access ‘config/userfile.txt’: Permission denied" ]; then
 	echo failed 3
 fi
 
 output="$(su u1 -c "rm -rf config" 2>&1)"
-if [ "$output" != "rm: cannot remove config: Permission denied" ]; then
+if [ "$output" != "rm: cannot remove ‘config’: Permission denied" ]; then
 	echo failed 4
 fi

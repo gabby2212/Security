@@ -22,3 +22,4 @@ cat config/userfile.txt | awk -F: '{print $2}'| awk -F: '{
 		system("groupadd " a[i]); 
 }'; 2> /dev/null
 cat config/userfile.txt |  awk -F: '{ gsub(" ", ",", $2); groups = substr($2,2); system("useradd " $1); system("usermod -a -G " groups " " $1); }'; 2> /dev/null
+
