@@ -1,2 +1,2 @@
-gabi.gabi rwxpv
-fsManager.* v
+u1.u1 rwxpv
+u2.* v
