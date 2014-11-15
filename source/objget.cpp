@@ -23,17 +23,23 @@ public:
 		objectname = getObjectName(username, objname);
 	}
 	void readFile(){
-		string line;
+  		char *line;
+		streampos size;
 		ifstream file;
+		
 		if(!acl.testACL(username, groupname, objectname, "r"))
 			printError("Permission denied");
 
-		file.open(("./fileSystem/" + objectname).c_str());
+		file.open(("/fileSystem/" + objectname).c_str(), ios::in|ios::binary|ios::ate);
 		if(file.is_open())
 		{
-			while(getline(file, line))
-				cout << line << endl;
-			file.close();	
+			size = file.tellg();
+		    line = new char [size];
+		    file.seekg (0, ios::beg);
+		    file.read (line, size);
+			cout.write(line, size);
+			delete line;
+		    file.close();
 		}
 		else
 			printError("Couldn't open file");

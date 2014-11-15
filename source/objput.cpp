@@ -28,7 +28,7 @@ public:
 		newFile.close();
 	}
 	void writeFile(){
-		string line;
+		char line[MAX_INPUT];
 		string fileOwner;
 		vector<string> *currentFiles;
 		string filename = objectname.substr(objectname.find(".") + 1, objectname.length());
@@ -43,8 +43,6 @@ public:
 		//If current user is owner and new file, create file
 		if(fileOwner.compare(username) == 0 && !hasFile(username, filename)){
 			ACLEntry *a = new ACLEntry(objectname, username);
-			a->userPermissions[username] = "rwxpv";
-			a->groupPermissions["*"] = "rwxpv";
 			acl.ace[objectname] = *a;
 			acl.saveACL();
 			currentFiles = &(users.find(username)->second);
@@ -58,17 +56,16 @@ public:
 		}
 
 		//Write to file
-		newFile.open(("./fileSystem/" + objectname).c_str());
+		ssize_t bytesRead = 0;
+		newFile.open(("/fileSystem/" + objectname).c_str(), ios::binary);
 		if(newFile.is_open()){
-			while(getline(cin, line)) {
-				if(!(line.length() > MAX_INPUT)){
-					newFile << line << endl;
-				}
+			while((bytesRead = read(STDIN_FILENO, line, MAX_INPUT)) > 0) {
+				newFile.write(line, bytesRead);
 		    }
-	    	newFile.close();
+			newFile.close();	
 		}
 		else{
-			printf("%s", strerror(errno));
+			printf("%s\n", strerror(errno));
 			printError("Couldn't create/open file");   
 		}
 	}

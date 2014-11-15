@@ -25,11 +25,17 @@ if [ "$var" != "this is a test file" ]; then
 fi
 
 output="$(su u1 -c "./objget existingFile" 2>&1 )"
-if [ "$output" != "Invalid object" ]; then
+if [ "$output" != "Couldn't find object" ]; then
 	echo failed 6
 fi
 
 output="$(su u2 -c "./objget u1+newfile" 2>&1)"
 if [ "$output" != "Permission denied" ]; then
 	echo failed 9
+fi
+
+su u2 -c "./objget newBinary | diff testFiles/testBinary -"
+var="$(su u2 -c "./objget newBinary | diff testFiles/testBinary -")"
+if [ "$var" != "" ]; then
+	echo failed 10
 fi

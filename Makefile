@@ -14,7 +14,7 @@ build: all
 test: build
 	@read -r -p "Are you sure? This will erase your current file system " response; \
 	[ $$response = "y" ] || [ $$response = "Y" ] || (echo "Exiting."; exit 1;)
-	rm -fr config fileSystem
+	rm -fr /config /fileSystem
 	./source/setUp.sh ./testFiles/testuserfile.txt
 	./testFiles/objput-tests.sh
 	./testFiles/objget-tests.sh
@@ -45,8 +45,8 @@ objtestacl:
 	g++ -o objtestacl ./source/objtestacl.cpp $(FLAGS)
 
 clean:
-	rm -fr *.o config fileSystem objput objget objlist objsetacl objgetacl objtestacl
+	rm -fr *.o /config /fileSystem objput objget objlist objsetacl objgetacl objtestacl
 
 emptyFs:
-	rm -fr fileSystem config
+	rm -fr /fileSystem /config
 	./source/setUp.sh

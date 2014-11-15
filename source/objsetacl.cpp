@@ -63,9 +63,9 @@ public:
 				if(permissions.empty())
 					printError("Usage user.group permissions");
 				validateUserAndGroup(user, group);
+				validPermissions(permissions);
 				
-				newEntry->userPermissions[user] = permissions;
-				newEntry->groupPermissions[group] = permissions;
+				newEntry->permissions[make_pair(user, group)] = permissions;
 			}
 	    }
 	    acl.ace[objectname] = *newEntry;

@@ -28,7 +28,7 @@ public:
 		string token;
 		string username;
 
-		ifstream aclFile("./config/aclFile");
+		ifstream aclFile("/config/aclFile");
 		if(aclFile.is_open())
 		{
 			while(getline(aclFile, line)){
@@ -43,7 +43,7 @@ public:
 				//First token is username
 				getline(iss, token, '.');
 				if(token.empty())
-					printError("Usage user.group permissions");
+					printError("Usage user.objname:");
 				username = token;
 
 				//Second token is object name, remove :
@@ -53,7 +53,7 @@ public:
 				//Validate user and object
 				if(!userExists(username))
 					printError("Invalid user aclFile might be corrupted");
-				validNameString(objname);
+				validNameString(objname, true);
 
 				//Add filename to owner
 				if(users.find(username) == users.end()){
@@ -66,43 +66,37 @@ public:
 				}				
 
 				//Read acl permission lines, create entry
-				ACLEntry *acle = new ACLEntry(username + "." +objname);
-				while(getline(aclFile, line) && !line.empty()){
-					string entityType;
-					string entityName;
-					string permissions;
-					//Separate lines by spaces
-					istringstream buf(line);
-				    istream_iterator<string> beg(buf), end;
-				    vector<string> tokens(beg, end);
-				    vector<string>::const_iterator i;
-				    i = tokens.begin();
+				//u2.g1 rwp
+				ACLEntry *acle = new ACLEntry(username + "." + objname);
+				while(getline(aclFile, line) && !line.empty()) {
+					if(!(line.length() > MAX_INPUT)){
+						string user;
+						string group;
+						string permissions;
+						
+						//First token is username
+						istringstream iss(line);
+						std::getline(iss, token, '.');
+						if(token.empty())
+							printError("Invalid aclFile");
+						user = token;
+						getline(iss, token);
 
-				    //acl line user/group username/groupname permissions
-				    entityType = (*i);
-			    	if(++i == tokens.end())
-			    		printError("Invalid aclFile");
-			    	entityName = (*i);
-			    	if(++i == tokens.end())
-			    		printError("Invalid aclFile");
-			    	permissions = (*i);
-			    
-			    	//validate line, add to acl entry
-			    	validNameString(entityName);
-			    	validPermissions(permissions);
-				    if(entityType.compare("user") == 0){
-				    	if(!userExists(entityName))
-				    		printError("Invalid username in aclFile");
-				    	acle->userPermissions[entityName] = permissions;
-				   	}
-				    else if(entityType.compare("group") == 0){
-				    	if(!groupExists(entityName) && entityName.compare("*") != 0)
-				    		printError("Invalid groupname in aclFile");
-				    	acle->groupPermissions[entityName] = permissions;
-				    }
-				    else
-				    	printError("Invalid keyword (user/group expected)");
-				}
+						//Second token is groupname
+						istringstream iss2(token);
+						vector<string> tok{istream_iterator<string>{iss2}, istream_iterator<string>{}};
+						group = tok.front();
+						if(group.empty())
+							printError("Invalid aclFile");
+						permissions = tok.back();
+						if(permissions.empty())
+							printError("Invalid aclFile");
+						validateUserAndGroup(user, group);
+						validPermissions(permissions);
+						
+						acle->permissions[make_pair(user, group)] = permissions;
+					}
+			    }
 				acl.ace[username + "." +objname] = *acle;
 			}
 			aclFile.close();
@@ -110,7 +104,7 @@ public:
 		else{
 			//File system is empty create aclFile
 			ofstream aclFile;
-			aclFile.open("./config/aclFile");
+			aclFile.open("/config/aclFile");
 			aclFile.close();
 		}
 	}
@@ -128,8 +122,8 @@ public:
 	}
 
 	void validateUserAndGroup(string username, string groupname){
-		validNameString(username);
-		validNameString(groupname);
+		validNameString(username, false);
+		validNameString(groupname, false);
 		if(!userExists(username))
 			printError("Invalid user");
 		if(!groupExists(groupname) && groupname.compare("*") != 0)

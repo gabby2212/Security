@@ -24,20 +24,13 @@ public:
 	}
 
 	void getACL(){
+		ACLEntry a;
 		if(!acl.testACL(username, groupname, objectname, "v"))
 			printError("Permission denied");
-		readACL();
-	}
-
-	void readACL(){
-		ACLEntry a;
 		if(acl.ace.find(objectname) == acl.ace.end())
 			printError("Invalid object");
 		a = acl.ace.find(objectname)->second;
-		for (map<string,string>::iterator it = a.userPermissions.begin(); it != a.userPermissions.end(); ++it)
-	    	cout << it->second << " " << it->first << endl;
-		for (map<string,string>::iterator it2 = a.groupPermissions.begin(); it2 != a.groupPermissions.end(); ++it2)
-			cout << it2->second << " " << it2->first << endl;
+		a.printACLEntry();
 	}
 };
 

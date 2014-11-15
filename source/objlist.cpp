@@ -25,7 +25,7 @@ public:
 	long fileSize(string filename){
 		FILE *fp;
 		long size = 0;
-		string fname = "./fileSystem/" + username + "." + filename;
+		string fname = "/fileSystem/" + username + "." + filename;
 
 		fp = fopen(fname.c_str(), "r");
 		if(fp == NULL)

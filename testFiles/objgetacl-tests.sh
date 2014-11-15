@@ -21,15 +21,13 @@ if [ "$output" != "Invalid characters" ]; then
 fi
 
 output="$(su u1 -c "./objgetacl foo" 2>&1)"
-if [ "$output" != "Invalid object" ]; then
+if [ "$output" != "Couldn't find object" ]; then
 	echo failed 5
 fi
 
 var="$(su u2 -c "./objgetacl fileFor1and2")"
-if [ "$var" != "rwxpv u1
-rwxpv u2
-rwxpv g3
-rwxpv g4" ]; then
+if [ "$var" != "u1.g3 => rwxpv
+u2.g4 => rwxpv" ]; then
 	echo failed 6
 fi
 

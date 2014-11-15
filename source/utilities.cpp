@@ -26,8 +26,10 @@ void printError(string err){
 	exit(1);
 }
 
-void validNameString(string name){
-	if(name.length() > MAX_USERNAME_SIZE)
+void validNameString(string name, bool file){
+	if(name.length() > MAX_USERNAME_SIZE && !file)
+		printError("Name too long");
+	if(name.length() > FILENAME_MAX && file)
 		printError("Name too long");
 	if(name.compare("*") == 0)
 		return;
@@ -37,14 +39,14 @@ void validNameString(string name){
 
 string getObjectName(string username, string objname){
 	if(objname.find("+") == string::npos){
-		validNameString(objname);
+		validNameString(objname, true);
 		return username + "." + objname;
 	}
 	else{
 		string targetUser = objname.substr(0, objname.find("+"));
 		string targetObject = objname.substr(objname.find("+") + 1, objname.length());
-		validNameString(targetUser);
-		validNameString(targetObject);
+		validNameString(targetUser, false);
+		validNameString(targetObject, true);
 		return targetUser + "." + targetObject;
 	}
 }

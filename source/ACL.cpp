@@ -3,8 +3,7 @@ using namespace std;
 class ACLEntry{
 public:
 	string objname;
-	map<string, string>  userPermissions;
-	map<string, string>  groupPermissions;
+	map<pair<string, string>, string>  permissions;
 
 	ACLEntry(){
 	}
@@ -14,27 +13,48 @@ public:
 
 	ACLEntry(string oname, string uname){
 		objname = oname;
-		userPermissions[uname] = "rwxpv";
-		groupPermissions["*"] = "rwxpv";
+		permissions[make_pair(uname, "*")] = "rwxpv";
 	}
 	~ACLEntry(){
-		userPermissions.clear();
-		groupPermissions.clear();
+		permissions.clear();
 	}
 
 	ACLEntry(const ACLEntry &a){
 		objname = a.objname;
-		userPermissions = a.userPermissions;
-		groupPermissions = a.groupPermissions;
+		permissions = a.permissions;
 
 	}
 	ACLEntry& operator= (const ACLEntry &a){
 		objname = a.objname;
-		userPermissions = a.userPermissions;
-		groupPermissions = a.groupPermissions;
+		permissions = a.permissions;
 		return *this;
 	}
+
+	string findUserPermissions(string username){
+		map<pair<string,string>, string>::iterator it;
+		for(it = permissions.begin(); it != permissions.end(); it++){
+			if((it->first).first == username)
+				return it->second;
+		}
+		return "not found";
+	}
+
+	string findGroupPermissions(string gname){
+		map<pair<string,string>, string>::iterator it;
+		for(it = permissions.begin(); it != permissions.end(); it++){
+			if((it->first).second == gname)
+				return it->second;
+		}
+		return "not found";
+	}
+
+	void printACLEntry(){
+		map<pair<string,string>, string>::iterator it;
+		for(it = permissions.begin(); it != permissions.end(); it++)
+		    cout << (it->first).first << "." << (it->first).second << " => " << it->second << '\n';	
+	}
 };
+
 class ACL{
 public:
 	map<string, ACLEntry> ace;
@@ -59,10 +79,7 @@ public:
 	    	string filename = it->first;
 	    	ACLEntry thisEntry = it->second;
 	    	cout << filename << ":" << endl;
-			for (map<string,string>::iterator it2=thisEntry.userPermissions.begin(); it2!=thisEntry.userPermissions.end(); ++it2)
-	    		cout << it2->first << " => " << it2->second << '\n';
-			for (map<string,string>::iterator it3=thisEntry.groupPermissions.begin(); it3!=thisEntry.groupPermissions.end(); ++it3)
-	    		std::cout << it3->first << " => " << it3->second << '\n';
+			thisEntry.printACLEntry();
 		}
 	}
 
@@ -71,27 +88,25 @@ public:
 		string perm;
 		vector<string> groups;
 		if(ace.find(objname) == ace.end())
-			printError("Invalid object");
+			printError("Couldn't find object");
 		groups = getUserGroups(uname);
 
 		//check user permissions
 		a = ace.find(objname)->second;
-		if(a.userPermissions.find(uname) != a.userPermissions.end()){
-			perm = a.userPermissions.find(uname)->second;
+		
+		if((perm = a.findUserPermissions(uname)) != "not found"){
 			if(perm.find(access) != string::npos)
 				return true;
 		}
 		//if no user permissions, check group permissions
-		else if(a.groupPermissions.find("*") != a.groupPermissions.end()){
-			perm = a.groupPermissions.find("*")->second;
+		else if((perm = a.findGroupPermissions("*")) != "not found"){
 			if(perm.find(access) != string::npos)
 				return true;
 		}
 		else{
 			for(vector<string>::iterator it = groups.begin(); it != groups.end(); ++it) {
 				string group = *it;
-				if(a.groupPermissions.find(group) != a.groupPermissions.end()){
-					perm = a.groupPermissions.find(group)->second;
+				if((perm = a.findGroupPermissions(group)) != "not found"){
 					if(perm.find(access) != string::npos)
 						return true;	
 				}		
@@ -102,15 +117,13 @@ public:
 
 
 	void saveACL(){
-		ofstream file("./config/aclFile",ios::out);
+		ofstream file("/config/aclFile",ios::out);
 		map<string, ACLEntry> aclss = ace;
 		for (map<string, ACLEntry>::iterator it = aclss.begin(); it != aclss.end(); it++){
-	    	ACLEntry thisyeah = it->second;
-	    	file << thisyeah.objname << ":" << endl;
-			for (map<string,string>::iterator it2=thisyeah.userPermissions.begin(); it2!=thisyeah.userPermissions.end(); ++it2)
-	    		file << "user " << it2->first << " " << it2->second << endl;
-			for (map<string,string>::iterator it3=thisyeah.groupPermissions.begin(); it3!=thisyeah.groupPermissions.end(); ++it3)
-	    		file << "group " << it3->first << " " << it3->second << endl;
+	    	ACLEntry thisObject = it->second;
+	    	file << thisObject.objname << ":" << endl;
+			for (map<pair<string,string>, string>::iterator it2=thisObject.permissions.begin(); it2!=thisObject.permissions.end(); ++it2)
+	    		file << (it2->first).first << "." << (it2->first).second << " " << it2->second << endl;
 	    	file << endl;
 		}
 		file.close();
@@ -119,7 +132,7 @@ public:
 	vector<string> getUserGroups(string username){
 		string line;
 		string tok;
-		string userfile = "./config/userfile.txt";
+		string userfile = "/config/userfile.txt";
 		vector<string> groups;
 
 		//Get user's groups from userfile.txt
@@ -137,12 +150,12 @@ public:
 			    i = tokens.begin();
 		        uname = (*i);
 
-		        validNameString(uname);
+		        validNameString(uname, false);
 				if(uname.compare(username) == 0 && ++i != tokens.end()){
 				    //Read and validate groups
 				    for(++i; i != tokens.end(); ++i){
 				    	tok = (*i);
-						validNameString(tok);
+						validNameString(tok, false);
   					    groups.push_back(tok);
 				    }
 				    userFile.close();

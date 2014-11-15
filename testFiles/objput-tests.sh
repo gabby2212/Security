@@ -44,3 +44,13 @@ output="$(su u2 -c "./objput u1+newfile < testFiles/test.txt" 2>&1)"
 if [ "$output" != "Permission denied" ]; then
 	echo failed 9
 fi
+
+var="$(su u2 -c "./objput newfile11111111111111111111111111111111111111111111111111111111111111111 < testFiles/test.txt")"
+if [ "$var" != "" ]; then
+	echo failed 10
+fi
+
+var="$(su u2 -c "./objput newBinary < testFiles/testBinary")"
+if [ "$var" != "" ]; then
+	echo failed 11
+fi
