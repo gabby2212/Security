@@ -44,7 +44,6 @@ public:
 		if(fileOwner.compare(username) == 0 && !hasFile(username, filename)){
 			ACLEntry *a = new ACLEntry(objectname, username);
 			acl.ace[objectname] = *a;
-			acl.saveACL();
 			currentFiles = &(users.find(username)->second);
 			currentFiles->push_back(filename);
 		}
@@ -62,7 +61,8 @@ public:
 			while((bytesRead = read(STDIN_FILENO, line, MAX_INPUT)) > 0) {
 				newFile.write(line, bytesRead);
 		    }
-			newFile.close();	
+			newFile.close();
+			acl.saveACL();
 		}
 		else{
 			printf("%s\n", strerror(errno));

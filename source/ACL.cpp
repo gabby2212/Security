@@ -117,16 +117,23 @@ public:
 
 
 	void saveACL(){
-		ofstream file("/config/aclFile",ios::out);
 		map<string, ACLEntry> aclss = ace;
 		for (map<string, ACLEntry>::iterator it = aclss.begin(); it != aclss.end(); it++){
-	    	ACLEntry thisObject = it->second;
-	    	file << thisObject.objname << ":" << endl;
-			for (map<pair<string,string>, string>::iterator it2=thisObject.permissions.begin(); it2!=thisObject.permissions.end(); ++it2)
-	    		file << (it2->first).first << "." << (it2->first).second << " " << it2->second << endl;
-	    	file << endl;
+			string filename = it->first;
+			long size = fileSize(filename);
+			filename = "/fileSystem/" + filename + ".meta";
+			ofstream file(filename, ios::out);
+			if(file.is_open()){
+				ACLEntry thisObject = it->second;
+		    	file << size << endl;
+				for (map<pair<string,string>, string>::iterator it2=thisObject.permissions.begin(); it2!=thisObject.permissions.end(); ++it2)
+		    		file << (it2->first).first << "." << (it2->first).second << " " << it2->second << endl;
+		    	file << endl;
+    			file.close();
+			}
+			else
+				printError("Couldn't save acl");	    	
 		}
-		file.close();
 	}
 
 	vector<string> getUserGroups(string username){
@@ -166,5 +173,21 @@ public:
 		}
 		else
 			printError("Couldn't open userfile");
+	}
+
+	long fileSize(string filename){
+		FILE *fp;
+		long size = 0;
+		string fname = "/fileSystem/" + filename;
+
+		fp = fopen(fname.c_str(), "r");
+		if(fp == NULL)
+			printError("Error opening file");
+		fseek(fp, 0, SEEK_END);
+		size = ftell(fp);
+		if(size < 0)
+			printError("Error reading file");
+		fclose(fp);
+		return size;
 	}
 };

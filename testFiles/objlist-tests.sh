@@ -7,7 +7,7 @@ fi
 
 var="$(su u1 -c "./objlist")"
 if [ "$var" != "newfile" ]; then
-	echo failed 1
+	echo failed 2
 fi
 
 var="$(su u1 -c "./objlist -l")"
