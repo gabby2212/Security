@@ -13,6 +13,9 @@ using namespace std;
 #include <iostream>
 #include <fstream>
 #include <dirent.h>
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
 
 static map<string, vector<string>>  users;
 static ACL acl;
@@ -73,7 +76,7 @@ public:
 					if(meta != "meta"){
 						string str(entry->d_name);
 						if(!fileExists(str + ".meta"))
-							printError("Couldn't find a file's metadata");					
+							printError("Couldn't find a file's metadata");
 					}
 					//If we are seeing the metadata file, check real file exists and create entry
 					else{
@@ -158,11 +161,18 @@ public:
 
 		//Add entry to acl object in memory
 		string path = "/fileSystem/" + username + "." + objname + ".meta";
-		ifstream aclFile(path.c_str());
+		ifstream aclFile(path.c_str(), ios::binary);
 		if(aclFile.is_open())
 		{
-			//First line should be file size, skip
+			//First line should be encrypted Key, skip
 			getline(aclFile, line);
+			if(line.empty())
+				printError("Invalid meta file");
+
+			//Second line is the size, skip
+			getline(aclFile, line);
+			if(line.empty())
+				printError("Invalid meta file");
 
 			//Read acl permission lines, create entry
 			//Format: u2.g1 rwp
@@ -171,7 +181,7 @@ public:
 					string user;
 					string group;
 					string permissions;
-					
+
 					//First token is username
 					istringstream iss(line);
 					std::getline(iss, token, '.');
@@ -201,5 +211,103 @@ public:
 		else{
 			printError("Couldn't open file's metaData");
 		}
-	}			
+	}
+
+	int decryptLine(char *line, unsigned char* k, unsigned char* decryptedtext){
+		int decryptedtext_len;
+		cout << line << endl;
+		cout << sizeof(k) << endl;
+		unsigned char *key = k;
+		unsigned char *iv = (unsigned char *)"01234567890123456";
+		unsigned char *ciphertext = (unsigned char *)line;
+		int ciphertext_len = (int)strlen((const char *)line);
+		cout << ciphertext_len << endl;
+		cout << "Decrypt key" << endl;
+		cout << k << endl;
+
+		/* Initialise the library */
+		ERR_load_crypto_strings();
+		OpenSSL_add_all_algorithms();
+		OPENSSL_config(NULL);
+
+		/* Decrypt the ciphertext */
+		decryptedtext_len = decrypt(ciphertext, ciphertext_len, key, iv,
+		decryptedtext);
+
+		/* Add a NULL terminator. We are expecting printable text */
+		decryptedtext[decryptedtext_len] = '\0';
+
+		/* Show the decrypted text */
+		printf("Decrypted text is:\n");
+		printf("%s\n", decryptedtext);
+
+		/* Clean up */
+		EVP_cleanup();
+		ERR_free_strings();
+		return decryptedtext_len;
+	}
+
+	int encryptLine(char *line, unsigned char* k, unsigned char* ciphertext){
+		int ciphertext_len;
+		unsigned char *key = k;
+		unsigned char *iv = (unsigned char *)"01234567890123456";
+		unsigned char *plaintext = (unsigned char *)line;
+		int textLen = (int)strlen((const char *)plaintext);
+		ERR_load_crypto_strings();
+		OpenSSL_add_all_algorithms();
+		OPENSSL_config(NULL);
+		cout << "Encrypt key" << endl;
+		cout << k << endl;
+
+		ciphertext_len = encrypt(plaintext, textLen, key, iv, ciphertext);
+
+		EVP_cleanup();
+		ERR_free_strings();
+		return ciphertext_len;
+	}
+
+	int encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key,
+	unsigned char *iv, unsigned char *ciphertext)
+	{
+		EVP_CIPHER_CTX *ctx;
+		int len;
+		int ciphertext_len;
+
+		if(!(ctx = EVP_CIPHER_CTX_new())) 
+			printError("Context couldn't be initialized");
+		if(EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv) != 1)
+			printError("Encryption operation couldn't be initialized");
+		if(EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len) != 1)
+			printError("Encrypt update failed");
+		ciphertext_len = len;
+		if(EVP_EncryptFinal_ex(ctx, ciphertext + len, &len) != 1) 
+			printError("Couldn't finilize encryption");
+		ciphertext_len += len;
+
+		EVP_CIPHER_CTX_free(ctx);
+		return ciphertext_len;
+	}
+
+	int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
+	unsigned char *iv, unsigned char *plaintext)
+	{
+		EVP_CIPHER_CTX *ctx;
+		int len;
+		int plaintext_len;
+
+		if(!(ctx = EVP_CIPHER_CTX_new())) 
+			printError("Context couldn't be initialized");
+		if(EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv) != 1)
+			printError("Decryption operation couldn't be initialized");
+		if(EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len) != 1)
+			printError("Dencrypt update failed");
+		plaintext_len = len;
+		if(EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1)
+			printError("Couldn't finilize encryption");
+		plaintext_len += len;
+
+		EVP_CIPHER_CTX_free(ctx);
+		return plaintext_len;
+	}
+			
 };

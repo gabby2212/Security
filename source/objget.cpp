@@ -7,6 +7,8 @@ using namespace std;
 #include "fileSystem.cpp"
 #include <map>
 #include <signal.h>
+#include <openssl/md5.h>
+
 
 extern map<string, vector<string>>  users;
 extern ACL acl;
@@ -16,30 +18,64 @@ private:
 	string username;
 	string groupname;
 	string objectname;
+	string passphrase;
+	char *decKey;
+
 public:
-	Objget(string objname){
+	Objget(string objname, string pass){
 		username = FileSystem::username;
 		groupname = FileSystem::groupname;
 		objectname = getObjectName(username, objname);
+		passphrase = pass;
+	}
+	~Objget(){
+		free(decKey);
 	}
 	void readFile(){
-  		char *line;
-		streampos size;
-		ifstream file;
-		
+		string tempLine;
+		char line[MAX_INPUT];
+		char decLine[MAX_INPUT];
+		char *key;
+		int bytesRead = 0;
+		FILE *fp;
+		decKey = (char *)malloc(32*sizeof(char));
+		unsigned long passLen = (unsigned long)strlen((const char *)passphrase.c_str());
+		const unsigned char *pass = (const unsigned char *)passphrase.c_str();
+		unsigned char digest[MD5_DIGEST_LENGTH];
+		int bytesToWrite = 0;
+
 		if(!acl.testACL(username, groupname, objectname, "r"))
 			printError("Permission denied");
 
-		file.open(("/fileSystem/" + objectname).c_str(), ios::in|ios::binary|ios::ate);
-		if(file.is_open())
+		string path = "/fileSystem/" + objectname + ".meta";
+		ifstream aclFile(path.c_str(), ios::binary);
+		if(aclFile.is_open())
 		{
-			size = file.tellg();
-		    line = new char [size];
-		    file.seekg (0, ios::beg);
-		    file.read (line, size);
-			cout.write(line, size);
-			delete line;
-		    file.close();
+			getline(aclFile, tempLine);
+			if(tempLine.empty())
+				printError("Invalid meta file");
+			key = (char *)tempLine.c_str();
+			aclFile.close();
+		}
+		else
+			printError("Couldn't read encrypted key");
+
+		MD5(pass, passLen, (unsigned char*)&digest);
+		int encryptedBytes = decryptLine(key, (unsigned char *)digest, (unsigned char *)decKey);
+		fp = fopen(("/fileSystem/" + objectname).c_str(), "rb");
+		if(fp != NULL)
+		{
+			cout << "what?" << endl;
+			while((bytesRead = fread(line, 1, MAX_INPUT, fp)) > 0) {
+				cout << line << endl;
+				cout << bytesRead << endl;
+				if(bytesRead < MAX_INPUT)
+					line[bytesRead] = '\0';
+				bytesToWrite = decryptLine(line, (unsigned char *)decKey, (unsigned char *)decLine);
+				cout << decLine << endl; 
+				//fwrite(decLine, 1, bytesToWrite, stdout);
+		    }
+			fclose(fp);
 		}
 		else
 			printError("Couldn't open file");
@@ -49,6 +85,8 @@ public:
 int main(int argc, char *argv[]){
 	int opt;
 	struct sigaction sigIntHandler;
+	bool k = false;
+	string passphrase;
 	string objname;
 
 	//Start signal handling to capture crtl+C and ctrl+D
@@ -58,11 +96,24 @@ int main(int argc, char *argv[]){
    	sigaction(SIGINT, &sigIntHandler, NULL);
    	sigaction(SIGTERM, &sigIntHandler, NULL);
 
-	if(argc != 2)
-		printError("Usage objget objname");
-	objname = argv[1];
+	//Check for valid input params
+	while((opt = getopt(argc, argv, "k:")) != ERROR){
+		switch(opt){
+			case 'k':
+				k = true;
+				passphrase = optarg;
+				break;
+		}
+	}
+	if(!k || argc != 4)
+		printError("Usage objget -k passphrase objname");
+	string str(argv[1]);
+	if(str.compare("-k") == 0)
+		objname = argv[3];
+	else
+		objname = argv[1];
 
-	Objget *getObj = new Objget(objname);
+	Objget *getObj = new Objget(objname, passphrase);
 	getObj->readFile();
 	return 0;
 }

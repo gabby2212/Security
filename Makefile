@@ -1,4 +1,4 @@
-FLAGS = -std=c++0x
+FLAGS = -std=c++0x -lssl -lcrypto
 PHONY: exec
  
 ifneq "$(strip $(userfile))" ""

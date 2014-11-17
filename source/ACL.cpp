@@ -1,8 +1,11 @@
 using namespace std;
 #include <vector>
+#include <string.h>
+
 class ACLEntry{
 public:
 	string objname;
+	unsigned char *encKey;
 	map<pair<string, string>, string>  permissions;
 
 	ACLEntry(){
@@ -22,12 +25,16 @@ public:
 	ACLEntry(const ACLEntry &a){
 		objname = a.objname;
 		permissions = a.permissions;
-
+		encKey = a.encKey;
 	}
 	ACLEntry& operator= (const ACLEntry &a){
 		objname = a.objname;
 		permissions = a.permissions;
+		encKey = a.encKey;
 		return *this;
+	}
+	unsigned char *getEncKey(){
+		return encKey;
 	}
 
 	string findUserPermissions(string username){
@@ -125,6 +132,7 @@ public:
 			ofstream file(filename, ios::out);
 			if(file.is_open()){
 				ACLEntry thisObject = it->second;
+				file << thisObject.getEncKey() << endl;
 		    	file << size << endl;
 				for (map<pair<string,string>, string>::iterator it2=thisObject.permissions.begin(); it2!=thisObject.permissions.end(); ++it2)
 		    		file << (it2->first).first << "." << (it2->first).second << " " << it2->second << endl;

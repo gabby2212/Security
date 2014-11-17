@@ -39,7 +39,7 @@ public:
 			printError("Invalid object");
 
 		oldEntry = &(aces->second);
-		newEntry = new ACLEntry(objectname);
+		newEntry = new ACLEntry(objectname, (char *)oldEntry->encKey);
 
 		while(getline(cin, line)) {
 			if(!(line.length() > MAX_INPUT)){
