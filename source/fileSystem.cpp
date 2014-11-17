@@ -164,12 +164,14 @@ public:
 		ifstream aclFile(path.c_str(), ios::binary);
 		if(aclFile.is_open())
 		{
-			//First line should be encrypted Key, skip
+			//First lines should be encrypted Key, then empty line, skip
 			getline(aclFile, line);
 			if(line.empty())
-				printError("Invalid meta file");
+				printError("Invalid meta file (No key)");
+			while (!line.empty())
+				getline(aclFile, line);
 
-			//Second line is the size, skip
+			//Next line is the size, skip
 			getline(aclFile, line);
 			if(line.empty())
 				printError("Invalid meta file");
@@ -215,33 +217,20 @@ public:
 
 	int decryptLine(char *line, unsigned char* k, unsigned char* decryptedtext){
 		int decryptedtext_len;
-		cout << line << endl;
-		cout << sizeof(k) << endl;
 		unsigned char *key = k;
 		unsigned char *iv = (unsigned char *)"01234567890123456";
 		unsigned char *ciphertext = (unsigned char *)line;
 		int ciphertext_len = (int)strlen((const char *)line);
-		cout << ciphertext_len << endl;
-		cout << "Decrypt key" << endl;
-		cout << k << endl;
 
-		/* Initialise the library */
+
 		ERR_load_crypto_strings();
 		OpenSSL_add_all_algorithms();
 		OPENSSL_config(NULL);
 
-		/* Decrypt the ciphertext */
 		decryptedtext_len = decrypt(ciphertext, ciphertext_len, key, iv,
 		decryptedtext);
-
-		/* Add a NULL terminator. We are expecting printable text */
 		decryptedtext[decryptedtext_len] = '\0';
 
-		/* Show the decrypted text */
-		printf("Decrypted text is:\n");
-		printf("%s\n", decryptedtext);
-
-		/* Clean up */
 		EVP_cleanup();
 		ERR_free_strings();
 		return decryptedtext_len;
@@ -256,8 +245,6 @@ public:
 		ERR_load_crypto_strings();
 		OpenSSL_add_all_algorithms();
 		OPENSSL_config(NULL);
-		cout << "Encrypt key" << endl;
-		cout << k << endl;
 
 		ciphertext_len = encrypt(plaintext, textLen, key, iv, ciphertext);
 
@@ -300,14 +287,28 @@ public:
 		if(EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv) != 1)
 			printError("Decryption operation couldn't be initialized");
 		if(EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len) != 1)
-			printError("Dencrypt update failed");
+			printError("Decrypt update failed");
 		plaintext_len = len;
 		if(EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1)
-			printError("Couldn't finilize encryption");
+			printError("Couldn't finilize decryption");
 		plaintext_len += len;
 
 		EVP_CIPHER_CTX_free(ctx);
 		return plaintext_len;
 	}
-			
+
+	void getEncKey(string objectname, char *key){
+		string tempLine;
+		string tempKey;
+		string path = "/fileSystem/" + objectname + ".meta";
+		FILE *fp = fopen(path.c_str(), "rb");
+		if(fp != NULL)
+		{
+			fread(key, 1, 32*sizeof(char), fp);
+			fclose(fp);
+		}
+		else
+			printError("Couldn't read encrypted key");
+	}
+		
 };

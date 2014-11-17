@@ -7,16 +7,18 @@ public:
 	string objname;
 	unsigned char *encKey;
 	map<pair<string, string>, string>  permissions;
-
+	int keySetFlag = 0;
 	ACLEntry(){
 	}
 	ACLEntry(string oname){
 		objname = oname;
+		keySetFlag = 0;
 	}
 
 	ACLEntry(string oname, string uname){
 		objname = oname;
 		permissions[make_pair(uname, "*")] = "rwxpv";
+		keySetFlag = 0;
 	}
 	~ACLEntry(){
 		permissions.clear();
@@ -26,15 +28,29 @@ public:
 		objname = a.objname;
 		permissions = a.permissions;
 		encKey = a.encKey;
+		keySetFlag = a.keySetFlag;
 	}
 	ACLEntry& operator= (const ACLEntry &a){
 		objname = a.objname;
 		permissions = a.permissions;
 		encKey = a.encKey;
+		keySetFlag = a.keySetFlag;
 		return *this;
 	}
 	unsigned char *getEncKey(){
-		return encKey;
+		if(keySetFlag == 1)
+			return encKey;
+		else
+			return NULL;
+	}
+
+	void setEncKey(char * key){
+		encKey = (unsigned char *)key;
+		keySetFlag = 1;
+	}
+
+	int getKeyFlag(){
+		return keySetFlag;
 	}
 
 	string findUserPermissions(string username){
@@ -125,14 +141,22 @@ public:
 
 	void saveACL(){
 		map<string, ACLEntry> aclss = ace;
+		char *key = (char *)calloc(32, sizeof(char));
+		
 		for (map<string, ACLEntry>::iterator it = aclss.begin(); it != aclss.end(); it++){
 			string filename = it->first;
 			long size = fileSize(filename);
 			filename = "/fileSystem/" + filename + ".meta";
+			ACLEntry thisObject = it->second;
+			if(thisObject.getKeyFlag() == 0)
+				getEncKey(filename, key);				
+			else
+				key = (char *)thisObject.getEncKey();
+
 			ofstream file(filename, ios::out);
 			if(file.is_open()){
-				ACLEntry thisObject = it->second;
-				file << thisObject.getEncKey() << endl;
+				file << key << endl;
+				file << "" << endl;
 		    	file << size << endl;
 				for (map<pair<string,string>, string>::iterator it2=thisObject.permissions.begin(); it2!=thisObject.permissions.end(); ++it2)
 		    		file << (it2->first).first << "." << (it2->first).second << " " << it2->second << endl;
@@ -142,6 +166,7 @@ public:
 			else
 				printError("Couldn't save acl");	    	
 		}
+		free(key);
 	}
 
 	vector<string> getUserGroups(string username){
@@ -197,5 +222,19 @@ public:
 			printError("Error reading file");
 		fclose(fp);
 		return size;
+	}
+
+	void getEncKey(string objectname, char *key){
+		string tempLine;
+		string tempKey;
+		string path = objectname;
+		FILE *fp = fopen(path.c_str(), "rb");
+		if(fp != NULL)
+		{
+			fread(key, 1, 32*sizeof(char), fp);
+			fclose(fp);
+		}
+		else
+			printError("Couldn't read encrypted key");
 	}
 };

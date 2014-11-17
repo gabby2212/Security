@@ -11,6 +11,8 @@ if [ "$var" != "newfile" ]; then
 fi
 
 var="$(su u1 -c "./objlist -l")"
-if [ "$var" != "19 newfile" ]; then
+if [ "$var" != "32 fileForGroup1Only
+32 existingFile
+32 newfile" ]; then
 	echo failed 3
 fi

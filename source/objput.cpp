@@ -27,10 +27,9 @@ public:
 		groupname = FileSystem::groupname;
 		objectname = getObjectName(username, objname);
 		passphrase = pass;
-		
+		generateKeys();
 	}
 	~Objput(){
-		free(encKey);
 	}
 	void writeFile(){
 		char line[MAX_INPUT];
@@ -57,6 +56,9 @@ public:
 			if(!acl.testACL(username, groupname, objectname, "w"))
 				printError("Permission denied");
 	 		cerr << "Object already exists, overwritting" << endl;
+	 		ACLEntry *a = &(acl.ace.find(objectname)->second);
+	 		a->setEncKey(encKey);
+			acl.ace[objectname] = *a;
 		}
 
 		//Write to file
@@ -78,25 +80,26 @@ public:
 
 	void createUserFile(string filename){
 		vector<string> *currentFiles;
+		ACLEntry *a = new ACLEntry(objectname, username);
+		a->setEncKey(encKey);
+		acl.ace[objectname] = *a;
+		currentFiles = &(users.find(username)->second);
+		currentFiles->push_back(filename);
+	}
+
+	void generateKeys(){
 		int byte_count = 16;
-		encKey = (char *)malloc(32*sizeof(char));
+		encKey = (char *)calloc(32, sizeof(char));
 		unsigned long passLen = (unsigned long)strlen((const char *)passphrase.c_str());
 		const unsigned char *pass = (const unsigned char *)passphrase.c_str();
 		unsigned char digest[MD5_DIGEST_LENGTH];
-
 		FILE *fp;
 		fp = fopen("/dev/urandom", "rb");
 		fread(&key, 1, byte_count, fp);
 		fclose(fp);
 
 		MD5(pass, passLen, (unsigned char*)&digest);
-		cout << sizeof(digest) << endl;
 		int encryptedBytes = encryptLine(key, digest, (unsigned char *)encKey);
-		ACLEntry *a = new ACLEntry(objectname, username);
-		a->encKey = (unsigned char *)encKey;
-		acl.ace[objectname] = *a;
-		currentFiles = &(users.find(username)->second);
-		currentFiles->push_back(filename);
 	}
 };
 
@@ -130,6 +133,7 @@ int main(int argc, char *argv[]){
 		objname = argv[3];
 	else
 		objname = argv[1];
+	validNameString(passphrase, true);
 
 	Objput *putObj = new Objput(objname, passphrase);
 	putObj->writeFile();

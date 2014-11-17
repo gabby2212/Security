@@ -1,21 +1,10 @@
 Gabriela Melchior gdm2118
-
-Choice of uid:
-I chose to create a standard user called fsManager, which belongs only to the fsManager group. The fsManager is in charge of all file system operations and owns all of the file system's folders.
-I chose to use a non-root user for 2 main reasons:
-
-1. The file system does not have to be run as root. Thus using root for it would be breaking the principle of least privilege.
-2. If the fsManager account is compromised it won't automatically give the attacker root capabilities.
-
-I am using the system's user and groups, but I kept the user.cpp object in order to avoid system calls. The users and groups are loaded at startup and from there on the user object is used.
-
 Passwords for the TA's:
 tinyvm root123
 gabi user123
 fsManager manager
 
 other users don't have passwords.
-
 
 setUp.sh:
 Assumptions -

@@ -20,6 +20,7 @@ private:
 	string objectname;
 	string passphrase;
 	char *decKey;
+	char *key;
 
 public:
 	Objget(string objname, string pass){
@@ -30,15 +31,15 @@ public:
 	}
 	~Objget(){
 		free(decKey);
+		free(key);
 	}
 	void readFile(){
-		string tempLine;
 		char line[MAX_INPUT];
 		char decLine[MAX_INPUT];
-		char *key;
 		int bytesRead = 0;
 		FILE *fp;
-		decKey = (char *)malloc(32*sizeof(char));
+		decKey = (char *)calloc(32, sizeof(char));
+		key = (char *)calloc(32, sizeof(char));
 		unsigned long passLen = (unsigned long)strlen((const char *)passphrase.c_str());
 		const unsigned char *pass = (const unsigned char *)passphrase.c_str();
 		unsigned char digest[MD5_DIGEST_LENGTH];
@@ -47,33 +48,17 @@ public:
 		if(!acl.testACL(username, groupname, objectname, "r"))
 			printError("Permission denied");
 
-		string path = "/fileSystem/" + objectname + ".meta";
-		ifstream aclFile(path.c_str(), ios::binary);
-		if(aclFile.is_open())
-		{
-			getline(aclFile, tempLine);
-			if(tempLine.empty())
-				printError("Invalid meta file");
-			key = (char *)tempLine.c_str();
-			aclFile.close();
-		}
-		else
-			printError("Couldn't read encrypted key");
-
+		getEncKey(objectname, key);
 		MD5(pass, passLen, (unsigned char*)&digest);
 		int encryptedBytes = decryptLine(key, (unsigned char *)digest, (unsigned char *)decKey);
 		fp = fopen(("/fileSystem/" + objectname).c_str(), "rb");
 		if(fp != NULL)
 		{
-			cout << "what?" << endl;
 			while((bytesRead = fread(line, 1, MAX_INPUT, fp)) > 0) {
-				cout << line << endl;
-				cout << bytesRead << endl;
 				if(bytesRead < MAX_INPUT)
 					line[bytesRead] = '\0';
 				bytesToWrite = decryptLine(line, (unsigned char *)decKey, (unsigned char *)decLine);
-				cout << decLine << endl; 
-				//fwrite(decLine, 1, bytesToWrite, stdout);
+				cout << decLine << endl;
 		    }
 			fclose(fp);
 		}
@@ -112,6 +97,7 @@ int main(int argc, char *argv[]){
 		objname = argv[3];
 	else
 		objname = argv[1];
+	validNameString(passphrase, true);
 
 	Objget *getObj = new Objget(objname, passphrase);
 	getObj->readFile();

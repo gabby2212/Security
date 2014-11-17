@@ -1,2 +1,2 @@
-u1.u1 rwxpv
+u1.g1 rwxpv
 u2.* v

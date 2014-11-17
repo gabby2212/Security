@@ -20,7 +20,7 @@ if [ "$output" != "Invalid characters" ]; then
 	echo failed 4
 fi
 
-var="$(su u1 -c "./objput existingFile < testFiles/test.txt")"
+var="$(su u1 -c "./objput -k hello existingFile < testFiles/test.txt")"
 if [ "$var" != "" ]; then
 	echo failed 5
 fi
@@ -30,7 +30,7 @@ if [ "$var" != "" ]; then
 	echo failed 6
 fi
 
-output="$(su u1 -c "./objput u2+newfile < testFiles/test.txt" 2>&1)"
+output="$(su u1 -c "./objput -k hello u2+newfile < testFiles/test.txt" 2>&1)"
 if [ "$output" != "Cannot create file for another user" ]; then
 	echo failed 7
 fi
@@ -45,7 +45,7 @@ if [ "$output" != "Permission denied" ]; then
 	echo failed 9
 fi
 
-var="$(su u2 -c "./objput fileForOnly2 < testFiles/test.txt")"
+var="$(su u2 -c "./objput -k hello fileForOnly2 < testFiles/test.txt")"
 if [ "$var" != "" ]; then
 	echo failed 10
 fi
@@ -60,7 +60,7 @@ if [ "$output" != "Permission denied" ]; then
 	echo failed 12
 fi
 
-var="$(su u2 -c "./objput fileFor1and2 < testFiles/test.txt")"
+var="$(su u2 -c "./objput -k hello fileFor1and2 < testFiles/test.txt")"
 if [ "$var" != "" ]; then
 	echo failed 13
 fi
@@ -76,7 +76,7 @@ if [ "$var" != "" ]; then
 	echo failed 15
 fi
 
-var="$(su u1 -c "./objput fileForGroup1Only < testFiles/test.txt")"
+var="$(su u1 -c "./objput -k hello fileForGroup1Only < testFiles/test.txt")"
 if [ "$var" != "" ]; then
 	echo failed 16
 fi
