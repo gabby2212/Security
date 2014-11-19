@@ -17,6 +17,7 @@ private:
 	string groupname;
 	string objectname;
 	char *key;
+	char *iv;
 public:
 	Objsetacl(string objname){
 		username = FileSystem::username;
@@ -26,6 +27,7 @@ public:
 
 	~Objsetacl(){
 		free(key);
+		free(iv);
 	}
 
 	void setAcl(){
@@ -38,6 +40,7 @@ public:
 		string line;
 		string token;
 		key = (char *)calloc(32, sizeof(char));
+		iv = (char *)calloc(16, sizeof(char));
 		ACLEntry *oldEntry;
 		ACLEntry *newEntry;
 		map<string, ACLEntry>::iterator aces = acl.ace.find(objectname);
@@ -45,9 +48,9 @@ public:
 			printError("Invalid object");
 
 		oldEntry = &(aces->second);
-		getEncKey(objectname, key);
+		getEncKey(objectname, key, iv);
 		newEntry = new ACLEntry(objectname);
-		newEntry->setEncKey(key);
+		newEntry->setEncKey(key, iv);
 
 		while(getline(cin, line)) {
 			if(!(line.length() > MAX_INPUT)){

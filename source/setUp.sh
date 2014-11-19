@@ -6,7 +6,7 @@ chown fsManager:fsManager /config
 chown -c fsManager:fsManager obj*
 chmod 700 /fileSystem
 chmod 700 /config
-chmod 4101 obj*
+chmod 4001 obj*
 
 if [ $# == 1 ] ; then
 	> /config/userfile.txt

@@ -164,10 +164,16 @@ public:
 		ifstream aclFile(path.c_str(), ios::binary);
 		if(aclFile.is_open())
 		{
-			//First lines should be encrypted Key, then empty line, skip
+			//First lines should be encrypted Key, then empty line, and iv skip
 			getline(aclFile, line);
 			if(line.empty())
 				printError("Invalid meta file (No key)");
+			while (!line.empty())
+				getline(aclFile, line);
+
+			getline(aclFile, line);
+			if(line.empty())
+				printError("Invalid meta file (No iv)");
 			while (!line.empty())
 				getline(aclFile, line);
 
@@ -215,13 +221,12 @@ public:
 		}
 	}
 
-	int decryptLine(char *line, unsigned char* k, unsigned char* decryptedtext){
+	int decryptLine(char *line, unsigned char* k, unsigned char* decryptedtext, unsigned char *v){
 		int decryptedtext_len;
 		unsigned char *key = k;
-		unsigned char *iv = (unsigned char *)"01234567890123456";
+		unsigned char *iv = v;
 		unsigned char *ciphertext = (unsigned char *)line;
 		int ciphertext_len = (int)strlen((const char *)line);
-
 
 		ERR_load_crypto_strings();
 		OpenSSL_add_all_algorithms();
@@ -236,20 +241,23 @@ public:
 		return decryptedtext_len;
 	}
 
-	int encryptLine(char *line, unsigned char* k, unsigned char* ciphertext){
+	int encryptLine(char *line, unsigned char* k, unsigned char* ciphertext, unsigned char* v){
 		int ciphertext_len;
 		unsigned char *key = k;
-		unsigned char *iv = (unsigned char *)"01234567890123456";
+		unsigned char *iv = v;
 		unsigned char *plaintext = (unsigned char *)line;
 		int textLen = (int)strlen((const char *)plaintext);
+		unsigned char *decryptedtext;
+
 		ERR_load_crypto_strings();
 		OpenSSL_add_all_algorithms();
 		OPENSSL_config(NULL);
-
 		ciphertext_len = encrypt(plaintext, textLen, key, iv, ciphertext);
+		ciphertext[ciphertext_len] = '\0';
 
 		EVP_cleanup();
 		ERR_free_strings();
+
 		return ciphertext_len;
 	}
 
@@ -281,6 +289,7 @@ public:
 		EVP_CIPHER_CTX *ctx;
 		int len;
 		int plaintext_len;
+		EVP_CIPHER_CTX_set_padding(ctx, 0);
 
 		if(!(ctx = EVP_CIPHER_CTX_new())) 
 			printError("Context couldn't be initialized");
@@ -289,26 +298,43 @@ public:
 		if(EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len) != 1)
 			printError("Decrypt update failed");
 		plaintext_len = len;
-		if(EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1)
+		if(EVP_DecryptFinal_ex(ctx, plaintext + len, &len) != 1){
+			ERR_print_errors_fp(stdout);
 			printError("Couldn't finilize decryption");
+		}
 		plaintext_len += len;
 
 		EVP_CIPHER_CTX_free(ctx);
 		return plaintext_len;
 	}
-
-	void getEncKey(string objectname, char *key){
-		string tempLine;
-		string tempKey;
+	void getEncKey(string objectname, char *key, char *iv){
 		string path = "/fileSystem/" + objectname + ".meta";
-		FILE *fp = fopen(path.c_str(), "rb");
-		if(fp != NULL)
+		string tempKey;
+		string tempIv;
+		string line;
+		ifstream aclFile(path.c_str(), ios::binary);
+		if(aclFile.is_open())
 		{
-			fread(key, 1, 32*sizeof(char), fp);
-			fclose(fp);
+			getline(aclFile, line);
+			if(line.empty())
+				printError("Invalid meta file (No key)");
+			while (!line.empty()){
+				tempKey += line;
+				getline(aclFile, line);
+			}
+
+			getline(aclFile, line);
+			if(line.empty())
+				printError("Invalid meta file (No iv)");
+			while (!line.empty()){
+				tempIv += line;
+				getline(aclFile, line);
+			}
 		}
 		else
 			printError("Couldn't read encrypted key");
+		strcpy(key, tempKey.c_str());
+		strcpy(iv, tempIv.c_str());
 	}
 		
 };

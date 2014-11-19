@@ -19,7 +19,8 @@ private:
 	string groupname;
 	string objectname;
 	string passphrase;
-	char key[16];
+	char key[17];
+	char iv[17];
 	char *encKey;
 public:
 	Objput(string objname, string pass){
@@ -57,16 +58,16 @@ public:
 				printError("Permission denied");
 	 		cerr << "Object already exists, overwritting" << endl;
 	 		ACLEntry *a = &(acl.ace.find(objectname)->second);
-	 		a->setEncKey(encKey);
+	 		a->setEncKey(encKey, iv);
 			acl.ace[objectname] = *a;
 		}
 
 		//Write to file
 		fp = fopen(("/fileSystem/" + objectname).c_str(), "wb");
 		if(fp != NULL){
-			while((bytesRead = read(STDIN_FILENO, line, MAX_INPUT)) > 0) {
+			while((bytesRead = read(STDIN_FILENO, line, (MAX_INPUT - 1))) > 0) {
 				line[bytesRead] = '\0';
-				bytesToWrite = encryptLine(line, (unsigned char *)key, (unsigned char *)encLine); 
+				bytesToWrite = encryptLine(line, (unsigned char *)key, (unsigned char *)encLine, (unsigned char *)iv); 
 				fwrite(encLine, 1, bytesToWrite, fp);
 		    }
 			fclose(fp);
@@ -81,7 +82,7 @@ public:
 	void createUserFile(string filename){
 		vector<string> *currentFiles;
 		ACLEntry *a = new ACLEntry(objectname, username);
-		a->setEncKey(encKey);
+		a->setEncKey(encKey, iv);
 		acl.ace[objectname] = *a;
 		currentFiles = &(users.find(username)->second);
 		currentFiles->push_back(filename);
@@ -95,11 +96,16 @@ public:
 		unsigned char digest[MD5_DIGEST_LENGTH];
 		FILE *fp;
 		fp = fopen("/dev/urandom", "rb");
-		fread(&key, 1, byte_count, fp);
+		fread(key, 1, byte_count, fp);
+		fread(iv, 1, byte_count, fp);
 		fclose(fp);
 
+		key[16] = '\0';
+		iv[16] = '\0';
+
 		MD5(pass, passLen, (unsigned char*)&digest);
-		int encryptedBytes = encryptLine(key, digest, (unsigned char *)encKey);
+		digest[MD5_DIGEST_LENGTH] = '\0';
+		int encryptedBytes = encryptLine(key, digest, (unsigned char *)encKey, (unsigned char *)iv);
 	}
 };
 

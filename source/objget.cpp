@@ -21,6 +21,7 @@ private:
 	string passphrase;
 	char *decKey;
 	char *key;
+	char *iv;
 
 public:
 	Objget(string objname, string pass){
@@ -32,6 +33,7 @@ public:
 	~Objget(){
 		free(decKey);
 		free(key);
+		free(iv);
 	}
 	void readFile(){
 		char line[MAX_INPUT];
@@ -40,6 +42,8 @@ public:
 		FILE *fp;
 		decKey = (char *)calloc(32, sizeof(char));
 		key = (char *)calloc(32, sizeof(char));
+		iv = (char *)calloc(16, sizeof(char));
+
 		unsigned long passLen = (unsigned long)strlen((const char *)passphrase.c_str());
 		const unsigned char *pass = (const unsigned char *)passphrase.c_str();
 		unsigned char digest[MD5_DIGEST_LENGTH];
@@ -48,16 +52,17 @@ public:
 		if(!acl.testACL(username, groupname, objectname, "r"))
 			printError("Permission denied");
 
-		getEncKey(objectname, key);
+		getEncKey(objectname, key, iv);
 		MD5(pass, passLen, (unsigned char*)&digest);
-		int encryptedBytes = decryptLine(key, (unsigned char *)digest, (unsigned char *)decKey);
+		digest[MD5_DIGEST_LENGTH] = '\0';
+		int encryptedBytes = decryptLine(key, digest, (unsigned char *)decKey, (unsigned char *)iv);
+
 		fp = fopen(("/fileSystem/" + objectname).c_str(), "rb");
 		if(fp != NULL)
 		{
-			while((bytesRead = fread(line, 1, MAX_INPUT, fp)) > 0) {
-				if(bytesRead < MAX_INPUT)
-					line[bytesRead] = '\0';
-				bytesToWrite = decryptLine(line, (unsigned char *)decKey, (unsigned char *)decLine);
+			while((bytesRead = fread(line, 1, (MAX_INPUT - 1), fp)) > 0) {
+				line[bytesRead] = '\0';
+				bytesToWrite = decryptLine(line, (unsigned char *)decKey, (unsigned char *)decLine, (unsigned char *)iv);
 				cout << decLine << endl;
 		    }
 			fclose(fp);

@@ -25,23 +25,23 @@ if [ "$var" != "" ]; then
 	echo failed 5
 fi
 
-var="$(su u2 -c "./objsetacl u1+existingFile < testFiles/testFileForOnly2.txt")"
+var="$(su u1 -c "./objsetacl existingFile < testFiles/testFileForOnly2.txt")"
 if [ "$var" != "" ]; then
 	echo failed 6
 fi
 
+output="$(su u1 -c "./objsetacl existingFile < testFiles/testFileFor1and2.txt" 2>&1)"
+if [ "$output" != "Permission denied" ]; then
+	echo failed 7
+fi
+
 output="$(su u1 -c "./objput -k hello u2+newfile < testFiles/test.txt" 2>&1)"
 if [ "$output" != "Cannot create file for another user" ]; then
-	echo failed 7
+	echo failed 8
 fi
 
 output="$(su u1 -c "./objsetacl newfile < testFiles/testFileForOnly1.txt" 2>&1)"
 if [ "$var" != "" ]; then
-	echo failed 8
-fi
-
-output="$(su u1 -c "./objsetacl existingFile < testFiles/testFileFor1and2.txt" 2>&1)"
-if [ "$output" != "Permission denied" ]; then
 	echo failed 9
 fi
 

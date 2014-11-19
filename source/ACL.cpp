@@ -6,6 +6,7 @@ class ACLEntry{
 public:
 	string objname;
 	unsigned char *encKey;
+	unsigned char *iv;
 	map<pair<string, string>, string>  permissions;
 	int keySetFlag = 0;
 	ACLEntry(){
@@ -28,6 +29,7 @@ public:
 		objname = a.objname;
 		permissions = a.permissions;
 		encKey = a.encKey;
+		iv = a.iv;
 		keySetFlag = a.keySetFlag;
 	}
 	ACLEntry& operator= (const ACLEntry &a){
@@ -35,6 +37,7 @@ public:
 		permissions = a.permissions;
 		encKey = a.encKey;
 		keySetFlag = a.keySetFlag;
+		iv = a.iv;
 		return *this;
 	}
 	unsigned char *getEncKey(){
@@ -44,8 +47,16 @@ public:
 			return NULL;
 	}
 
-	void setEncKey(char * key){
+	unsigned char *getIv(){
+		if(keySetFlag == 1)
+			return iv;
+		else
+			return NULL;
+	}
+
+	void setEncKey(char * key, char *v){
 		encKey = (unsigned char *)key;
+		iv = (unsigned char *)v;
 		keySetFlag = 1;
 	}
 
@@ -53,20 +64,12 @@ public:
 		return keySetFlag;
 	}
 
-	string findUserPermissions(string username){
+	string findPermissions(string username, string gname){
 		map<pair<string,string>, string>::iterator it;
 		for(it = permissions.begin(); it != permissions.end(); it++){
 			if((it->first).first == username)
-				return it->second;
-		}
-		return "not found";
-	}
-
-	string findGroupPermissions(string gname){
-		map<pair<string,string>, string>::iterator it;
-		for(it = permissions.begin(); it != permissions.end(); it++){
-			if((it->first).second == gname)
-				return it->second;
+				if((it->first).second == gname)
+					return it->second;
 		}
 		return "not found";
 	}
@@ -117,19 +120,14 @@ public:
 		//check user permissions
 		a = ace.find(objname)->second;
 		
-		if((perm = a.findUserPermissions(uname)) != "not found"){
-			if(perm.find(access) != string::npos)
-				return true;
-		}
-		//if no user permissions, check group permissions
-		else if((perm = a.findGroupPermissions("*")) != "not found"){
+		if((perm = a.findPermissions(uname, "*")) != "not found"){
 			if(perm.find(access) != string::npos)
 				return true;
 		}
 		else{
 			for(vector<string>::iterator it = groups.begin(); it != groups.end(); ++it) {
 				string group = *it;
-				if((perm = a.findGroupPermissions(group)) != "not found"){
+				if((perm = a.findPermissions(uname, group)) != "not found"){
 					if(perm.find(access) != string::npos)
 						return true;	
 				}		
@@ -142,20 +140,25 @@ public:
 	void saveACL(){
 		map<string, ACLEntry> aclss = ace;
 		char *key = (char *)calloc(32, sizeof(char));
-		
+		char *iv = (char *)calloc(16, sizeof(char));
+
 		for (map<string, ACLEntry>::iterator it = aclss.begin(); it != aclss.end(); it++){
 			string filename = it->first;
 			long size = fileSize(filename);
 			filename = "/fileSystem/" + filename + ".meta";
 			ACLEntry thisObject = it->second;
 			if(thisObject.getKeyFlag() == 0)
-				getEncKey(filename, key);				
-			else
+				getEncKey(filename, key, iv);				
+			else{
 				key = (char *)thisObject.getEncKey();
+				iv = (char *)thisObject.getIv();
+			}
 
 			ofstream file(filename, ios::out);
 			if(file.is_open()){
 				file << key << endl;
+				file << "" << endl;
+				file << iv << endl;
 				file << "" << endl;
 		    	file << size << endl;
 				for (map<pair<string,string>, string>::iterator it2=thisObject.permissions.begin(); it2!=thisObject.permissions.end(); ++it2)
@@ -224,17 +227,33 @@ public:
 		return size;
 	}
 
-	void getEncKey(string objectname, char *key){
-		string tempLine;
-		string tempKey;
+	void getEncKey(string objectname, char *key, char *iv){
 		string path = objectname;
-		FILE *fp = fopen(path.c_str(), "rb");
-		if(fp != NULL)
+		string tempKey;
+		string tempIv;
+		string line;
+		ifstream aclFile(path.c_str(), ios::binary);
+		if(aclFile.is_open())
 		{
-			fread(key, 1, 32*sizeof(char), fp);
-			fclose(fp);
+			getline(aclFile, line);
+			if(line.empty())
+				printError("Invalid meta file (No key)");
+			while (!line.empty()){
+				tempKey += line;
+				getline(aclFile, line);
+			}
+
+			getline(aclFile, line);
+			if(line.empty())
+				printError("Invalid meta file (No iv)");
+			while (!line.empty()){
+				tempIv += line;
+				getline(aclFile, line);
+			}
 		}
 		else
 			printError("Couldn't read encrypted key");
+		strcpy(key, tempKey.c_str());
+		strcpy(iv, tempIv.c_str());
 	}
 };
